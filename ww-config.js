@@ -11,9 +11,21 @@ export default {
         properties: [
           "layout",
           "height",
+          "footerHeight",
           "textColor",
           "borderColor",
           "wrapperBorderRadius",
+        ],
+      },
+      {
+        label: "Settings Icon",
+        isCollapsible: true,
+        properties: [
+          "showSettingsIcon",
+          "settingsIconType",
+          "settingsIconWidth",
+          "settingsIconColor",
+          "settingsIconBg",
         ],
       },
       {
@@ -27,6 +39,7 @@ export default {
           "headerFontFamily",
           "headerHeightMode",
           "headerHeight",
+          "headerPadding",
         ],
       },
       {
@@ -49,6 +62,7 @@ export default {
           "rowAlternateColor",
           "rowHoverColor",
           "rowVerticalPaddingScale",
+          "rowHeight",
         ],
       },
       {
@@ -64,6 +78,7 @@ export default {
           "cellFontFamily",
           "cellFontSize",
           "cellSelectionBorderColor",
+          "cellHorizontalPadding",
           "cellAlignmentMode",
           "cellAlignment",
         ],
@@ -106,6 +121,14 @@ export default {
       "idFormula",
       "generateColumns",
       "columns",
+      {
+        label: "External Inputs",
+        isCollapsible: true,
+        properties: [
+          "columnOverrides",
+          "currentBreakpoint",
+        ],
+      },
       {
         label: "Pagination",
         isCollapsible: true,
@@ -219,6 +242,32 @@ export default {
       },
       getTestEvent: "getColumnMovedTestEvent",
     },
+    {
+      name: "onColumnStateChanged",
+      label: { en: "On Column State Changed" },
+      event: {
+        changeType: "moved",
+        columnStates: {
+          columnId: {
+            default: {
+              order: 0,
+              visible: true,
+              name: "Column Name",
+              width: 100,
+            },
+          },
+        },
+        breakpoint: "default",
+      },
+      default: true,
+    },
+    {
+      name: "settingsClicked",
+      label: { en: "On Settings Clicked" },
+      event: {
+        id: "",
+      },
+    },
   ],
   actions: [
     { label: "Reset filters", action: "resetFilters" },
@@ -271,7 +320,11 @@ export default {
     {
       label: "Force Datagrid refresh",
       action: "refreshData",
-    }
+    },
+    {
+      label: "Apply Column Overrides",
+      action: "updateColumnOverrides",
+    },
   ],
   properties: {
     layout: {
@@ -281,17 +334,18 @@ export default {
         options: [
           { value: "fixed", label: "Fixed", default: true },
           { value: "auto", label: "Auto" },
+          { value: "fill", label: "Fill Container" },
         ],
       },
       bindable: true,
       responsive: true,
       propertyHelp: {
         tooltip:
-          "Be cautious when using auto mode with a large number of rows, as it may slow down page rendering",
+          "Fixed: set explicit height. Auto: grows with content (caution with large datasets). Fill Container: grows with content but caps at parent container height with internal scrollbar.",
       },
       bindingValidation: {
         type: "string",
-        tooltip: "fixed | auto",
+        tooltip: "fixed | auto | fill",
       },
     },
     height: {
@@ -311,7 +365,32 @@ export default {
         type: "string",
         tooltip: "Height of the grid (e.g., 400px)",
       },
-      hidden: (content) => content.layout === "auto",
+      hidden: (content) => content.layout === "auto" || content.layout === "fill",
+      /* wwEditor:end */
+    },
+    footerHeight: {
+      label: { en: "Footer Height" },
+      type: "Length",
+      section: "style",
+      options: {
+        noRange: true,
+      },
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      defaultValue: "0px",
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip:
+          "Height reserved for footer element outside the grid (e.g., 50px)",
+      },
+      propertyHelp: {
+        tooltip:
+          "Space to reserve for a footer element. Only applies in Fill Container mode.",
+      },
+      hidden: (content) => content.layout !== "fill",
       /* wwEditor:end */
     },
     headerBackgroundColor: {
@@ -566,6 +645,17 @@ export default {
       bindable: true,
       hidden: (content) => content.headerHeightMode === "auto",
     },
+    headerPadding: {
+      label: { en: "Padding" },
+      type: "Spacing",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 50 }],
+      },
+      responsive: true,
+      states: true,
+      classes: true,
+      bindable: true,
+    },
     borderColor: {
       type: "Color",
       label: "Border Color",
@@ -637,6 +727,18 @@ export default {
         type: "string",
         cssSupports: "color",
       },
+    },
+    cellHorizontalPadding: {
+      label: { en: "Horizontal Padding" },
+      type: "Length",
+      options: {
+        noRange: true,
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 50 }],
+      },
+      responsive: true,
+      states: true,
+      classes: true,
+      bindable: true,
     },
     columnHoverHighlight: {
       type: "OnOff",
@@ -770,6 +872,29 @@ export default {
       states: true,
       classes: true,
     },
+    rowHeight: {
+      type: "Number",
+      label: "Row Height",
+      options: {
+        min: 20,
+        max: 200,
+        step: 1,
+      },
+      defaultValue: 42,
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Height of each row in pixels. Used for Fill Container mode height calculations.",
+      },
+      bindingValidation: {
+        type: "number",
+        tooltip: "Row height in pixels (default: 42)",
+      },
+      /* wwEditor:end */
+    },
     menuTextColor: {
       label: "Text color",
       type: "Color",
@@ -797,6 +922,54 @@ export default {
       responsive: true,
       states: true,
       classes: true,
+    },
+    showSettingsIcon: {
+      type: "OnOff",
+      label: "Settings Icon",
+      defaultValue: false,
+      bindable: true,
+    },
+    settingsIconColor: {
+      label: { en: "Icon Color" },
+      type: "Color",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.showSettingsIcon,
+    },
+    settingsIconBg: {
+      label: { en: "Icon Background" },
+      type: "Color",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.showSettingsIcon,
+    },
+    settingsIconType: {
+      label: { en: "Icon" },
+      type: "SystemIcon",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      defaultValue: null,
+      hidden: (content) => !content?.showSettingsIcon,
+    },
+    settingsIconWidth: {
+      label: { en: "Container Width" },
+      type: "Length",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 16, max: 80, default: true }],
+        noRange: true,
+      },
+      defaultValue: "32px",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.showSettingsIcon,
     },
     actionColor: {
       label: "Text color",
@@ -1300,6 +1473,16 @@ export default {
                   tooltip: "True to hide the column",
                 },
               },
+              allowColumnOverride: {
+                label: "Allow Column Override",
+                type: "OnOff",
+                defaultValue: true,
+                /* wwEditor:start */
+                propertyHelp: {
+                  tooltip: "Allow this column to be overridden by column state management",
+                },
+                /* wwEditor:end */
+              },
               editable: {
                 label: "Editable",
                 type: "OnOff",
@@ -1381,6 +1564,7 @@ export default {
                 properties: [
                   "pinned",
                   "hide",
+                  "allowColumnOverride",
                   "editable",
                   "filter",
                   "sortable",
@@ -1406,6 +1590,38 @@ export default {
       defaultValue: [],
       section: "settings",
       bindable: true,
+    },
+    columnOverrides: {
+      label: { en: "Column Overrides" },
+      type: "Text",
+      section: "settings",
+      bindable: true,
+      defaultValue: "",
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Bind an object to override column settings per breakpoint. Format: { columnId: { default: { order, width, visible }, tablet: {...}, mobile: {...} } }",
+      },
+      bindingValidation: {
+        type: "object",
+        tooltip: "Column state overrides keyed by column ID and breakpoint",
+      },
+      /* wwEditor:end */
+    },
+    currentBreakpoint: {
+      label: { en: "Current Breakpoint" },
+      type: "Text",
+      defaultValue: "default",
+      section: "settings",
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Current breakpoint from WeWeb (default/tablet/mobile). Used for responsive column visibility.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Breakpoint name: 'default', 'tablet', or 'mobile'",
+      },
+      /* wwEditor:end */
     },
     pagination: {
       label: { en: "Pagination" },
