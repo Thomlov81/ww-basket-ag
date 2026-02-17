@@ -25,11 +25,13 @@
       :locale-text="localeText"
       enableCellTextSelection
       ensureDomOrder
+      :singleClickEdit="content?.singleClickEdit || false"
       :row-drag-managed="true"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
       @cell-value-changed="onCellValueChanged"
+      @cell-editing-started="onCellEditingStarted"
       @filter-changed="onFilterChanged"
       @sort-changed="onSortChanged"
       @row-clicked="onRowClicked"
@@ -80,6 +82,7 @@ import {
 import ActionCellRenderer from "./components/ActionCellRenderer.vue";
 import ImageCellRenderer from "./components/ImageCellRenderer.vue";
 import WewebCellRenderer from "./components/WewebCellRenderer.vue";
+import DragCellRenderer from "./components/DragCellRenderer.vue";
 
 // TODO: maybe register less modules
 // TODO: maybe register modules per grid instead of globally
@@ -91,6 +94,7 @@ export default {
     ActionCellRenderer,
     ImageCellRenderer,
     WewebCellRenderer,
+    DragCellRenderer,
   },
   props: {
     content: {
@@ -746,6 +750,7 @@ export default {
 
     return {
       resolveMappingFormula,
+      getIcon,
       settingsIconHtml,
       onGridReady,
       onRowSelected,
@@ -835,6 +840,31 @@ export default {
             ? `-${this.content?.cellAlignment || "left"}`
             : null,
       };
+
+      // Cell style for editable/non-editable visual differentiation
+      const editableBg = this.content?.editableCellBackgroundColor;
+      const nonEditableBg = this.content?.nonEditableCellBackgroundColor;
+      const editableCursor = this.content?.editableCellCursor;
+      const nonEditableCursor = this.content?.nonEditableCellCursor;
+
+      if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
+        definition.cellStyle = (params) => {
+          const isEditable =
+            typeof params.colDef?.editable === "function"
+              ? params.colDef.editable(params)
+              : !!params.colDef?.editable;
+          const style = {};
+          if (isEditable) {
+            if (editableBg) style.backgroundColor = editableBg;
+            if (editableCursor) style.cursor = editableCursor;
+          } else {
+            if (nonEditableBg) style.backgroundColor = nonEditableBg;
+            if (nonEditableCursor) style.cursor = nonEditableCursor;
+          }
+          return Object.keys(style).length > 0 ? style : null;
+        };
+      }
+
       if (this.content?.useDynamicStyleHeader) {
         definition.headerStyle = this.getHeaderStyle;
       } else {
@@ -993,10 +1023,43 @@ export default {
         result.push(buildColumnDef(item));
       }
 
-      // Handle row reorder on first actual column
+      // Handle row reorder with dedicated drag column
       if (this.content?.rowReorder) {
-        const firstCol = result.find((item) => item.field || item.colId);
-        if (firstCol) firstCol.rowDrag = true;
+        const iconSizeRaw = this.content?.dragIconSize || "16px";
+        const iconSizePx = parseInt(iconSizeRaw, 10) || 16;
+        const paddingRaw = this.content?.dragIconPadding || "4px 8px";
+        const paddingParts = paddingRaw.split(/\s+/).map((p) => parseInt(p, 10) || 0);
+        const horizontalPadding =
+          paddingParts.length >= 4
+            ? paddingParts[1] + paddingParts[3]
+            : paddingParts.length >= 2
+              ? paddingParts[1] * 2
+              : paddingParts[0] * 2;
+        const dragColWidth = iconSizePx + horizontalPadding + 2;
+
+        result.unshift({
+          headerName: "",
+          colId: "__dragHandle",
+          cellRenderer: "DragCellRenderer",
+          cellRendererParams: {
+            iconType: this.content?.dragIconType,
+            iconSize: iconSizeRaw,
+            iconColor: this.content?.dragIconColor,
+            iconPadding: paddingRaw,
+            iconCursor: this.content?.dragIconCursor || "grab",
+            getIcon: this.getIcon,
+          },
+          width: dragColWidth,
+          maxWidth: dragColWidth,
+          minWidth: dragColWidth,
+          sortable: false,
+          filter: false,
+          resizable: false,
+          suppressMovable: true,
+          suppressHeaderMenuButton: true,
+          lockPosition: "left",
+          cellClass: "ag-drag-handle-cell",
+        });
       }
 
       return result;
@@ -1105,6 +1168,13 @@ export default {
         "--ww-settings-icon-color": this.content?.settingsIconColor,
         "--ww-settings-icon-bg": this.content?.settingsIconBg,
         "--ww-settings-icon-size": this.settingsIconButtonStyle?.width,
+        // Header column resize divider
+        "--ww-header-divider-color": this.content?.headerDividerColor,
+        "--ww-header-divider-hover-color": this.content?.headerDividerHoverColor,
+        // Cell editing border
+        "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
+        "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
+        "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
       };
     },
     theme() {
@@ -1293,6 +1363,19 @@ export default {
           columnId: event.column.getColId(),
           row: event.data,
         },
+      });
+    },
+    onCellEditingStarted() {
+      if (!this.content?.selectAllOnEditStart) return;
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const input = this.$el?.querySelector(
+            ".ag-cell-inline-editing input"
+          );
+          if (input) {
+            input.select();
+          }
+        }, 10);
       });
     },
     onRowClicked(event) {
@@ -1570,6 +1653,13 @@ export default {
     }
   }
 
+  // Cell editing border customization
+  :deep(.ag-cell-inline-editing) {
+    border-color: var(--ww-cell-editing-border-color) !important;
+    border-width: var(--ww-cell-editing-border-width, 2px) !important;
+    border-style: var(--ww-cell-editing-border-style, solid) !important;
+  }
+
   // Reserve space in the header for the settings icon
   &.has-settings-icon :deep(.ag-header) {
     padding-right: var(--ww-settings-icon-size, 32px);
@@ -1612,6 +1702,23 @@ export default {
         width: 100%;
         height: 100%;
       }
+    }
+  }
+
+  // Header column resize divider
+  :deep(.ag-header-cell-resize::after) {
+    background-color: var(--ww-header-divider-color) !important;
+  }
+  :deep(.ag-header-cell-resize:hover::after) {
+    background-color: var(--ww-header-divider-hover-color, var(--ww-header-divider-color)) !important;
+  }
+
+  // Drag handle column
+  :deep(.ag-drag-handle-cell) {
+    padding: 0 !important;
+
+    .ag-cell-value {
+      justify-content: center;
     }
   }
 

@@ -29,6 +29,17 @@ export default {
         ],
       },
       {
+        label: "Drag Handle",
+        isCollapsible: true,
+        properties: [
+          "dragIconType",
+          "dragIconSize",
+          "dragIconColor",
+          "dragIconPadding",
+          "dragIconCursor",
+        ],
+      },
+      {
         label: "Header",
         isCollapsible: true,
         properties: [
@@ -71,6 +82,14 @@ export default {
         properties: ["columnHoverHighlight", "columnHoverColor"],
       },
       {
+        label: "Divider Layout",
+        isCollapsible: true,
+        properties: [
+          "headerDividerColor",
+          "headerDividerHoverColor",
+        ],
+      },
+      {
         label: "Cell",
         isCollapsible: true,
         properties: [
@@ -81,6 +100,21 @@ export default {
           "cellHorizontalPadding",
           "cellAlignmentMode",
           "cellAlignment",
+        ],
+      },
+      {
+        label: "Cell Editing",
+        isCollapsible: true,
+        properties: [
+          "singleClickEdit",
+          "selectAllOnEditStart",
+          "editableCellBackgroundColor",
+          "nonEditableCellBackgroundColor",
+          "editableCellCursor",
+          "nonEditableCellCursor",
+          "cellEditingBorderColor",
+          "cellEditingBorderWidth",
+          "cellEditingBorderStyle",
         ],
       },
       {
@@ -152,6 +186,11 @@ export default {
       "resizableColumns",
       "rowReorder",
       "reorderInfoBox",
+      "dragIconType",
+      "dragIconSize",
+      "dragIconColor",
+      "dragIconPadding",
+      "dragIconCursor",
       "initialFilters",
       "initialSort",
       "initialColumnsOrder",
@@ -762,6 +801,22 @@ export default {
         tooltip: `Should be a semi-transparent color to allow the background color to show through.`,
       },
       hidden: (content) => !content.columnHoverHighlight,
+    },
+    headerDividerColor: {
+      label: { en: "Divider Color" },
+      type: "Color",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    headerDividerHoverColor: {
+      label: { en: "Divider Hover Color" },
+      type: "Color",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
     },
     rowBackgroundColor: {
       type: "Color",
@@ -1893,6 +1948,274 @@ export default {
         title: "Incompatible options",
         content: `Row reordering is not compatible with pagination. Pagination will be disabled`,
       },
+    },
+    dragIconType: {
+      label: { en: "Drag Icon" },
+      type: "SystemIcon",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      defaultValue: null,
+      hidden: (content) => !content?.rowReorder,
+    },
+    dragIconSize: {
+      label: { en: "Icon Size" },
+      type: "Length",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 8, max: 48, default: true }],
+        noRange: true,
+      },
+      defaultValue: "16px",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.rowReorder,
+    },
+    dragIconColor: {
+      label: { en: "Icon Color" },
+      type: "Color",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.rowReorder,
+    },
+    dragIconPadding: {
+      label: { en: "Icon Padding" },
+      type: "Length",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 32, default: true }],
+        noRange: true,
+      },
+      defaultValue: "4px 8px",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.rowReorder,
+    },
+    dragIconCursor: {
+      label: { en: "Cursor" },
+      type: "TextSelect",
+      section: "settings",
+      options: {
+        options: [
+          { value: "grab", label: "Grab" },
+          { value: "move", label: "Move" },
+          { value: "pointer", label: "Pointer" },
+          { value: "default", label: "Default" },
+          { value: "crosshair", label: "Crosshair" },
+        ],
+      },
+      defaultValue: "grab",
+      bindable: true,
+      hidden: (content) => !content?.rowReorder,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "Valid values: grab | move | pointer | default | crosshair",
+      },
+      /* wwEditor:end */
+    },
+    // ── Cell Editing ──────────────────────────────────────────────
+    singleClickEdit: {
+      type: "OnOff",
+      label: "Single Click Edit",
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Enable single-click to start editing cells instead of double-click.",
+      },
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "True to enable single-click editing",
+      },
+      /* wwEditor:end */
+    },
+    selectAllOnEditStart: {
+      type: "OnOff",
+      label: "Select All on Edit",
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Automatically select all text in the input when a cell enters edit mode.",
+      },
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "True to auto-select text on edit start",
+      },
+      /* wwEditor:end */
+    },
+    editableCellBackgroundColor: {
+      type: "Color",
+      label: "Editable Cell Background",
+      options: {
+        nullable: true,
+      },
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Background color applied to cells that are editable.",
+      },
+      bindingValidation: {
+        markdown: "background-color",
+        type: "string",
+        cssSupports: "background-color",
+      },
+      /* wwEditor:end */
+    },
+    nonEditableCellBackgroundColor: {
+      type: "Color",
+      label: "Non-Editable Cell Background",
+      options: {
+        nullable: true,
+      },
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Background color applied to cells that are not editable.",
+      },
+      bindingValidation: {
+        markdown: "background-color",
+        type: "string",
+        cssSupports: "background-color",
+      },
+      /* wwEditor:end */
+    },
+    editableCellCursor: {
+      type: "TextSelect",
+      label: "Editable Cell Cursor",
+      options: {
+        options: [
+          { value: "text", label: "Text" },
+          { value: "pointer", label: "Pointer" },
+          { value: "cell", label: "Cell" },
+          { value: "crosshair", label: "Crosshair" },
+          { value: "default", label: "Arrow" },
+        ],
+      },
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Mouse cursor shown when hovering over editable cells.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Valid values: text | pointer | cell | crosshair | default",
+      },
+      /* wwEditor:end */
+    },
+    nonEditableCellCursor: {
+      type: "TextSelect",
+      label: "Non-Editable Cell Cursor",
+      options: {
+        options: [
+          { value: "not-allowed", label: "Not Allowed" },
+          { value: "default", label: "Arrow" },
+          { value: "text", label: "Text" },
+          { value: "pointer", label: "Pointer" },
+        ],
+      },
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Mouse cursor shown when hovering over non-editable cells.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Valid values: not-allowed | default | text | pointer",
+      },
+      /* wwEditor:end */
+    },
+    cellEditingBorderColor: {
+      type: "Color",
+      label: "Editing Border Color",
+      options: {
+        nullable: true,
+      },
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Border color applied to cells that are currently in edit mode.",
+      },
+      bindingValidation: {
+        markdown: "color",
+        type: "string",
+        cssSupports: "color",
+      },
+      /* wwEditor:end */
+    },
+    cellEditingBorderWidth: {
+      type: "Length",
+      label: "Editing Border Width",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 10, default: true }],
+        noRange: true,
+      },
+      defaultValue: "2px",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Border width for cells in edit mode.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Border width (e.g., 2px)",
+      },
+      /* wwEditor:end */
+    },
+    cellEditingBorderStyle: {
+      type: "TextSelect",
+      label: "Editing Border Style",
+      options: {
+        options: [
+          { value: "solid", label: "Solid" },
+          { value: "dashed", label: "Dashed" },
+          { value: "dotted", label: "Dotted" },
+          { value: "double", label: "Double" },
+        ],
+      },
+      defaultValue: "solid",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Border style for cells in edit mode.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Valid values: solid | dashed | dotted | double",
+      },
+      /* wwEditor:end */
     },
   },
 };
