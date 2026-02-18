@@ -1821,6 +1821,19 @@ export default {
     background-color: var(--ww-header-divider-hover-color, var(--ww-header-divider-color)) !important;
   }
 
+  // Fix column border gaps + hover/selection white line:
+  // Move row border from .ag-row to .ag-cell so that:
+  // 1. border-right (column) and border-bottom (row) meet at the same cell corner
+  // 2. row hover/selection ::before overlay covers the full row height (no border gap)
+  :deep(.ag-row) {
+    border-bottom: none !important;
+  }
+  :deep(.ag-cell) {
+    border-bottom-style: var(--ag-row-border-style, solid);
+    border-bottom-color: var(--ag-row-border-color, transparent);
+    border-bottom-width: var(--ag-row-border-width, 0px);
+  }
+
   // Drag handle column
   :deep(.ag-drag-handle-cell) {
     padding: 0 !important;
