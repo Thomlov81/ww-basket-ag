@@ -8,7 +8,7 @@
       :domLayout="content.layout === 'auto' ? 'autoHeight' : 'normal'"
       :style="style"
       :rowSelection="rowSelection"
-      :selection-column-def="{ pinned: true }"
+      :selection-column-def="selectionColumnDef"
       :theme="theme"
       :getRowId="getRowId"
       :pagination="content.pagination"
@@ -277,6 +277,9 @@ export default {
 
         const columnStates = {};
         rawStates.forEach((col, index) => {
+          // Skip system columns (selection checkbox, drag handle) - not configurable
+          if (col.colId === '__dragHandle' || col.colId?.startsWith('ag-Grid-')) return;
+
           let config = configByColId[col.colId];
           if (!config && index < configByIndex.length) {
             const indexConfig = configByIndex[index];
@@ -852,8 +855,7 @@ export default {
       const editableCursor = this.content?.editableCellCursor;
       const nonEditableCursor = this.content?.nonEditableCellCursor;
 
-      // Use CSS classes for background colors (not inline styles) so that
-      // AG Grid's row hover/selection backgrounds can properly override them
+      // Add CSS classes for targeting cells with hover/selection overlays
       if (editableBg || nonEditableBg) {
         const existingCellClass = definition.cellClass;
         definition.cellClass = (params) => {
@@ -885,8 +887,8 @@ export default {
         };
       }
 
-      // Keep cursor in cellStyle (cursor doesn't conflict with hover/selection)
-      if (editableCursor || nonEditableCursor) {
+      // Inline cellStyle for backgroundColor + cursor (skip drag column)
+      if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
         definition.cellStyle = (params) => {
           if (params.colDef?.colId === "__dragHandle") return null;
           const isEditable =
@@ -894,8 +896,13 @@ export default {
               ? params.colDef.editable(params)
               : !!params.colDef?.editable;
           const style = {};
-          if (isEditable && editableCursor) style.cursor = editableCursor;
-          if (!isEditable && nonEditableCursor) style.cursor = nonEditableCursor;
+          if (isEditable) {
+            if (editableBg) style.backgroundColor = editableBg;
+            if (editableCursor) style.cursor = editableCursor;
+          } else {
+            if (nonEditableBg) style.backgroundColor = nonEditableBg;
+            if (nonEditableCursor) style.cursor = nonEditableCursor;
+          }
           return Object.keys(style).length > 0 ? style : null;
         };
       }
@@ -920,6 +927,7 @@ export default {
           : {};
 
       const buildColumnDef = (col) => {
+        const effectiveHeaderName = col?.showHeader === false ? '' : col?.headerName;
         const minWidth =
           !col?.minWidth || col?.minWidth === "auto"
             ? null
@@ -986,7 +994,7 @@ export default {
           case "action": {
             return {
               ...commonProperties,
-              headerName: col?.headerName,
+              headerName: effectiveHeaderName,
               cellRenderer: "ActionCellRenderer",
               cellRendererParams: {
                 name: col?.actionName,
@@ -1002,7 +1010,7 @@ export default {
           case "custom":
             return {
               ...commonProperties,
-              headerName: col?.headerName,
+              headerName: effectiveHeaderName,
               field: col?.field,
               cellRenderer: "WewebCellRenderer",
               cellRendererParams: {
@@ -1014,7 +1022,7 @@ export default {
           case "image": {
             return {
               ...commonProperties,
-              headerName: col?.headerName,
+              headerName: effectiveHeaderName,
               field: col?.field,
               cellRenderer: "ImageCellRenderer",
               cellRendererParams: {
@@ -1026,7 +1034,7 @@ export default {
           default: {
             const result = {
               ...commonProperties,
-              headerName: col?.headerName,
+              headerName: effectiveHeaderName,
               field: col?.field,
               sortable: col?.sortable,
               filter: col?.filter,
@@ -1123,6 +1131,15 @@ export default {
         };
       }
     },
+    selectionColumnDef() {
+      const alignment = this.content?.selectionColumnAlignment;
+      return {
+        pinned: true,
+        width: this.content?.selectionColumnWidth || 56,
+        cellClass: alignment ? `-${alignment}` : null,
+        headerClass: alignment ? `-${alignment}` : null,
+      };
+    },
     style() {
       if (this.content?.layout === "auto") return {};
       if (this.content?.layout === "fill") {
@@ -1210,12 +1227,47 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
-        // Editable/non-editable cell backgrounds
-        "--ww-editable-cell-bg": this.content?.editableCellBackgroundColor,
-        "--ww-non-editable-cell-bg": this.content?.nonEditableCellBackgroundColor,
       };
     },
     theme() {
+      // Build rowBorder param
+      let rowBorderParam = undefined;
+      if (this.content?.rowBorderEnabled === false) {
+        rowBorderParam = false;
+      } else if (
+        this.content?.rowBorderColor ||
+        this.content?.rowBorderStyle ||
+        this.content?.rowBorderWidth
+      ) {
+        rowBorderParam = {};
+        if (this.content?.rowBorderColor)
+          rowBorderParam.color = this.content.rowBorderColor;
+        if (this.content?.rowBorderStyle)
+          rowBorderParam.style = this.content.rowBorderStyle;
+        if (this.content?.rowBorderWidth)
+          rowBorderParam.width = this.content.rowBorderWidth;
+      }
+
+      // Build columnBorder param
+      let columnBorderParam = undefined;
+      if (this.content?.columnBorderEnabled) {
+        columnBorderParam = {};
+        if (this.content?.columnBorderColor)
+          columnBorderParam.color = this.content.columnBorderColor;
+        if (this.content?.columnBorderStyle)
+          columnBorderParam.style = this.content.columnBorderStyle;
+        if (this.content?.columnBorderWidth)
+          columnBorderParam.width = this.content.columnBorderWidth;
+      }
+
+      // Build headerColumnBorder param
+      let headerColumnBorderParam = undefined;
+      if (this.content?.headerColumnBorderEnabled) {
+        headerColumnBorderParam = this.content?.headerColumnBorderColor
+          ? { color: this.content.headerColumnBorderColor }
+          : true;
+      }
+
       return themeQuartz.withParams({
         headerBackgroundColor: this.content?.headerBackgroundColor,
         headerTextColor: this.content?.headerTextColor,
@@ -1242,11 +1294,18 @@ export default {
         foregroundColor: this.content?.textColor,
         checkboxCheckedBackgroundColor: this.content?.selectionCheckboxColor,
         rangeSelectionBorderColor: this.content?.cellSelectionBorderColor,
-        checkboxUncheckedBorderColor: this.content?.checkboxUncheckedBorderColor,
+        checkboxUncheckedBorderColor:
+          this.content?.checkboxUncheckedBorderColor,
         focusShadow: this.content?.focusShadow?.length
           ? this.content.focusShadow
-          : undefined,
+          : "none",
         wrapperBorderRadius: this.content?.wrapperBorderRadius,
+        rowBorder: rowBorderParam,
+        columnBorder: columnBorderParam,
+        headerColumnBorder: headerColumnBorderParam,
+        headerColumnBorderHeight: this.content?.headerColumnBorderEnabled
+          ? this.content?.headerColumnBorderHeight
+          : undefined,
       });
     },
     isEditing() {
@@ -1771,25 +1830,49 @@ export default {
     }
   }
 
-  // Editable/non-editable cell backgrounds
-  :deep(.ww-cell-editable) {
-    background-color: var(--ww-editable-cell-bg);
-  }
+  // Ensure cell content sits above the hover/selection overlay
+  :deep(.ww-cell-editable),
   :deep(.ww-cell-non-editable) {
-    background-color: var(--ww-non-editable-cell-bg);
-  }
-
-  // Row hover and selection override cell backgrounds
-  :deep(.ag-row-hover) {
-    .ww-cell-editable,
-    .ww-cell-non-editable {
-      background-color: transparent;
+    .ag-cell-wrapper,
+    .ag-cell-value {
+      position: relative;
+      z-index: 1;
     }
   }
+
+  // Hover overlay on cells with editable/non-editable backgrounds
+  :deep(.ag-row-hover:not(.ag-full-width-row)) {
+    .ww-cell-editable::after,
+    .ww-cell-non-editable::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-color: var(--ag-row-hover-color);
+      pointer-events: none;
+    }
+  }
+
+  // Selection overlay on cells with editable/non-editable backgrounds
   :deep(.ag-row-selected) {
-    .ww-cell-editable,
-    .ww-cell-non-editable {
-      background-color: transparent;
+    .ww-cell-editable::after,
+    .ww-cell-non-editable::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-color: var(--ag-selected-row-background-color);
+      pointer-events: none;
+    }
+  }
+
+  // Hover + selected: layer both colors (matches AG Grid's own pattern)
+  :deep(.ag-row-hover.ag-row-selected) {
+    .ww-cell-editable::after,
+    .ww-cell-non-editable::after {
+      background-color: var(--ag-row-hover-color);
+      background-image: linear-gradient(
+        var(--ag-selected-row-background-color),
+        var(--ag-selected-row-background-color)
+      );
     }
   }
 

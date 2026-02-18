@@ -82,9 +82,20 @@ export default {
         properties: ["columnHoverHighlight", "columnHoverColor"],
       },
       {
-        label: "Divider Layout",
+        label: "Grid Lines",
         isCollapsible: true,
         properties: [
+          "rowBorderEnabled",
+          "rowBorderColor",
+          "rowBorderStyle",
+          "rowBorderWidth",
+          "columnBorderEnabled",
+          "columnBorderColor",
+          "columnBorderStyle",
+          "columnBorderWidth",
+          "headerColumnBorderEnabled",
+          "headerColumnBorderColor",
+          "headerColumnBorderHeight",
           "headerDividerColor",
           "headerDividerHoverColor",
         ],
@@ -180,6 +191,8 @@ export default {
           "enableClickSelection",
           "disableCheckboxes",
           "selectAll",
+          "selectionColumnWidth",
+          "selectionColumnAlignment",
         ],
       },
       "movableColumns",
@@ -817,6 +830,174 @@ export default {
       responsive: true,
       states: true,
       classes: true,
+    },
+    rowBorderEnabled: {
+      label: { en: "Row Border" },
+      type: "OnOff",
+      defaultValue: true,
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    rowBorderColor: {
+      label: { en: "Row Border Color" },
+      type: "Color",
+      options: { nullable: true },
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => content?.rowBorderEnabled === false,
+    },
+    rowBorderStyle: {
+      label: { en: "Row Border Style" },
+      type: "TextSelect",
+      options: {
+        options: [
+          { value: "solid", label: "Solid" },
+          { value: "dashed", label: "Dashed" },
+          { value: "dotted", label: "Dotted" },
+        ],
+      },
+      defaultValue: "solid",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => content?.rowBorderEnabled === false,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "solid | dashed | dotted",
+      },
+      /* wwEditor:end */
+    },
+    rowBorderWidth: {
+      label: { en: "Row Border Width" },
+      type: "Number",
+      options: {
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+      defaultValue: 1,
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => content?.rowBorderEnabled === false,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "number",
+        tooltip: "Border width in pixels (1-10)",
+      },
+      /* wwEditor:end */
+    },
+    columnBorderEnabled: {
+      label: { en: "Column Border" },
+      type: "OnOff",
+      defaultValue: false,
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    columnBorderColor: {
+      label: { en: "Column Border Color" },
+      type: "Color",
+      options: { nullable: true },
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.columnBorderEnabled,
+    },
+    columnBorderStyle: {
+      label: { en: "Column Border Style" },
+      type: "TextSelect",
+      options: {
+        options: [
+          { value: "solid", label: "Solid" },
+          { value: "dashed", label: "Dashed" },
+          { value: "dotted", label: "Dotted" },
+        ],
+      },
+      defaultValue: "solid",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.columnBorderEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "solid | dashed | dotted",
+      },
+      /* wwEditor:end */
+    },
+    columnBorderWidth: {
+      label: { en: "Column Border Width" },
+      type: "Number",
+      options: {
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+      defaultValue: 1,
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.columnBorderEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "number",
+        tooltip: "Border width in pixels (1-10)",
+      },
+      /* wwEditor:end */
+    },
+    headerColumnBorderEnabled: {
+      label: { en: "Header Column Border" },
+      type: "OnOff",
+      defaultValue: false,
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    headerColumnBorderColor: {
+      label: { en: "Header Column Border Color" },
+      type: "Color",
+      options: { nullable: true },
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.headerColumnBorderEnabled,
+    },
+    headerColumnBorderHeight: {
+      label: { en: "Header Column Border Height" },
+      type: "TextSelect",
+      options: {
+        options: [
+          { value: "100%", label: "Full" },
+          { value: "80%", label: "80%" },
+          { value: "50%", label: "50%" },
+        ],
+      },
+      defaultValue: "100%",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      hidden: (content) => !content?.headerColumnBorderEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "100% | 80% | 50%",
+      },
+      /* wwEditor:end */
     },
     rowBackgroundColor: {
       type: "Color",
@@ -1561,6 +1742,16 @@ export default {
                 },
                 /* wwEditor:end */
               },
+              showHeader: {
+                label: "Show Header",
+                type: "OnOff",
+                defaultValue: true,
+                /* wwEditor:start */
+                propertyHelp: {
+                  tooltip: "When disabled, the column header text will be hidden.",
+                },
+                /* wwEditor:end */
+              },
               editable: {
                 label: "Editable",
                 type: "OnOff",
@@ -1645,6 +1836,7 @@ export default {
                   "hideTablet",
                   "hideMobile",
                   "allowColumnOverride",
+                  "showHeader",
                   "editable",
                   "filter",
                   "sortable",
@@ -1840,6 +2032,52 @@ export default {
           "Select all behavior: 'all' to select all rows, 'filtered' to select filtered rows, 'currentPage' to select current page rows",
       },
       hidden: (content) => content.rowSelection !== "multiple",
+      /* wwEditor:end */
+    },
+    selectionColumnWidth: {
+      label: { en: "Selection Column Width" },
+      type: "Number",
+      section: "settings",
+      defaultValue: 56,
+      options: {
+        min: 20,
+        max: 300,
+        step: 1,
+      },
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "number",
+        tooltip: "Width of the selection column in pixels",
+      },
+      hidden: (content) =>
+        content.rowSelection === "none" ||
+        content.rowSelection === undefined ||
+        content.disableCheckboxes,
+      /* wwEditor:end */
+    },
+    selectionColumnAlignment: {
+      label: { en: "Selection Column Alignment" },
+      type: "TextSelect",
+      section: "settings",
+      defaultValue: "center",
+      options: {
+        options: [
+          { value: "left", label: "Left" },
+          { value: "center", label: "Center" },
+          { value: "right", label: "Right" },
+        ],
+      },
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "Alignment of the selection column: left | center | right",
+      },
+      hidden: (content) =>
+        content.rowSelection === "none" ||
+        content.rowSelection === undefined ||
+        content.disableCheckboxes,
       /* wwEditor:end */
     },
     movableColumns: {
