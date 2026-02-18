@@ -206,17 +206,22 @@ export default {
     const getColumnHide = (col, breakpoint) => {
       const bp = breakpoint || "default";
 
+      // Mobile breakpoint
       if (bp === "mobile") {
         if (col?.hideMobile === "hide") return true;
         if (col?.hideMobile === "show") return false;
+        // "inherit" or undefined falls through to default
       }
 
+      // Tablet breakpoint
       if (bp === "tablet") {
         if (col?.hideTablet === "hide") return true;
         if (col?.hideTablet === "show") return false;
+        // "inherit" or undefined falls through to default
       }
 
-      return col?.hide ?? false;
+      // Default breakpoint or inherited
+      return col?.hideDefault ?? col?.hide ?? false;
     };
 
     const debouncedEmitColumnState = (changeType) => {
@@ -847,20 +852,50 @@ export default {
       const editableCursor = this.content?.editableCellCursor;
       const nonEditableCursor = this.content?.nonEditableCellCursor;
 
-      if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
+      // Use CSS classes for background colors (not inline styles) so that
+      // AG Grid's row hover/selection backgrounds can properly override them
+      if (editableBg || nonEditableBg) {
+        const existingCellClass = definition.cellClass;
+        definition.cellClass = (params) => {
+          if (params.colDef?.colId === "__dragHandle") {
+            return existingCellClass
+              ? typeof existingCellClass === "function"
+                ? existingCellClass(params)
+                : existingCellClass
+              : null;
+          }
+
+          const isEditable =
+            typeof params.colDef?.editable === "function"
+              ? params.colDef.editable(params)
+              : !!params.colDef?.editable;
+
+          const bgClass = isEditable
+            ? "ww-cell-editable"
+            : "ww-cell-non-editable";
+
+          if (existingCellClass) {
+            const existing =
+              typeof existingCellClass === "function"
+                ? existingCellClass(params)
+                : existingCellClass;
+            return existing ? [existing, bgClass] : bgClass;
+          }
+          return bgClass;
+        };
+      }
+
+      // Keep cursor in cellStyle (cursor doesn't conflict with hover/selection)
+      if (editableCursor || nonEditableCursor) {
         definition.cellStyle = (params) => {
+          if (params.colDef?.colId === "__dragHandle") return null;
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable;
           const style = {};
-          if (isEditable) {
-            if (editableBg) style.backgroundColor = editableBg;
-            if (editableCursor) style.cursor = editableCursor;
-          } else {
-            if (nonEditableBg) style.backgroundColor = nonEditableBg;
-            if (nonEditableCursor) style.cursor = nonEditableCursor;
-          }
+          if (isEditable && editableCursor) style.cursor = editableCursor;
+          if (!isEditable && nonEditableCursor) style.cursor = nonEditableCursor;
           return Object.keys(style).length > 0 ? style : null;
         };
       }
@@ -1175,6 +1210,9 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
+        // Editable/non-editable cell backgrounds
+        "--ww-editable-cell-bg": this.content?.editableCellBackgroundColor,
+        "--ww-non-editable-cell-bg": this.content?.nonEditableCellBackgroundColor,
       };
     },
     theme() {
@@ -1658,6 +1696,17 @@ export default {
     border-color: var(--ww-cell-editing-border-color) !important;
     border-width: var(--ww-cell-editing-border-width, 2px) !important;
     border-style: var(--ww-cell-editing-border-style, solid) !important;
+
+    // Respect cell alignment in edit mode
+    &.-center input {
+      text-align: center;
+    }
+    &.-right input {
+      text-align: right;
+    }
+    &.-left input {
+      text-align: left;
+    }
   }
 
   // Reserve space in the header for the settings icon
@@ -1719,6 +1768,28 @@ export default {
 
     .ag-cell-value {
       justify-content: center;
+    }
+  }
+
+  // Editable/non-editable cell backgrounds
+  :deep(.ww-cell-editable) {
+    background-color: var(--ww-editable-cell-bg);
+  }
+  :deep(.ww-cell-non-editable) {
+    background-color: var(--ww-non-editable-cell-bg);
+  }
+
+  // Row hover and selection override cell backgrounds
+  :deep(.ag-row-hover) {
+    .ww-cell-editable,
+    .ww-cell-non-editable {
+      background-color: transparent;
+    }
+  }
+  :deep(.ag-row-selected) {
+    .ww-cell-editable,
+    .ww-cell-non-editable {
+      background-color: transparent;
     }
   }
 

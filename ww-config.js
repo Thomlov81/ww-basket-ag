@@ -1519,13 +1519,36 @@ export default {
                   ],
                 },
               },
-              hide: {
-                label: "Hidden",
+              hideDefault: {
+                label: "Hidden: Default",
                 type: "OnOff",
                 bindable: true,
+                defaultValue: false,
                 bindingValidation: {
                   type: "boolean",
-                  tooltip: "True to hide the column",
+                  tooltip: "True to hide the column on default (desktop) breakpoint",
+                },
+              },
+              hideTablet: {
+                label: "Hidden: Tablet",
+                type: "TextRadioGroup",
+                options: {
+                  choices: [
+                    { value: "inherit", label: "Inherit", default: true },
+                    { value: "show", label: "Show" },
+                    { value: "hide", label: "Hide" },
+                  ],
+                },
+              },
+              hideMobile: {
+                label: "Hidden: Mobile",
+                type: "TextRadioGroup",
+                options: {
+                  choices: [
+                    { value: "inherit", label: "Inherit", default: true },
+                    { value: "show", label: "Show" },
+                    { value: "hide", label: "Hide" },
+                  ],
                 },
               },
               allowColumnOverride: {
@@ -1618,7 +1641,9 @@ export default {
                 isCollapsible: true,
                 properties: [
                   "pinned",
-                  "hide",
+                  "hideDefault",
+                  "hideTablet",
+                  "hideMobile",
                   "allowColumnOverride",
                   "editable",
                   "filter",
