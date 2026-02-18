@@ -1829,9 +1829,15 @@ export default {
     border-bottom: none !important;
   }
   :deep(.ag-cell) {
-    border-bottom-style: var(--ag-row-border-style, solid);
-    border-bottom-color: var(--ag-row-border-color, transparent);
-    border-bottom-width: var(--ag-row-border-width, 0px);
+    border-bottom: var(--ag-row-border);
+  }
+
+  // Extend hover/selection overlays 1px above the row to close
+  // any gap between the header border and the first row's hover color
+  :deep(.ag-row-hover:not(.ag-full-width-row)::before),
+  :deep(.ag-row-hover.ag-full-width-row.ag-row-group::before),
+  :deep(.ag-row-selected::before) {
+    top: -1px;
   }
 
   // Drag handle column
