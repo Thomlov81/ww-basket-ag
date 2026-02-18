@@ -51,6 +51,9 @@ export default {
           "headerHeightMode",
           "headerHeight",
           "headerPadding",
+          "headerBorderColor",
+          "headerBorderStyle",
+          "headerBorderWidth",
         ],
       },
       {
@@ -707,6 +710,50 @@ export default {
       states: true,
       classes: true,
       bindable: true,
+    },
+    headerBorderColor: {
+      label: { en: "Border Color" },
+      type: "Color",
+      options: { nullable: true },
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    headerBorderStyle: {
+      label: { en: "Border Style" },
+      type: "TextSelect",
+      options: {
+        options: [
+          { value: "solid", label: "Solid" },
+          { value: "dashed", label: "Dashed" },
+          { value: "dotted", label: "Dotted" },
+          { value: "none", label: "None" },
+        ],
+      },
+      defaultValue: "solid",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "solid | dashed | dotted | none",
+      },
+      /* wwEditor:end */
+    },
+    headerBorderWidth: {
+      label: { en: "Border Width" },
+      type: "Length",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 10 }],
+      },
+      defaultValue: "1px",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
     },
     borderColor: {
       type: "Color",
