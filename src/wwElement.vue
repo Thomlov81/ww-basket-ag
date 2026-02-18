@@ -832,7 +832,6 @@ export default {
         editing: this.isEditing,
         "fill-mode": this.content?.layout === "fill",
         "has-settings-icon": !!this.content?.showSettingsIcon,
-        "column-borders": !!this.content?.columnBorderEnabled,
       };
     },
     wrapperStyle() {
@@ -1228,21 +1227,6 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
-        // Column borders (vertical between cells)
-        "--ww-column-border-width": this.content?.columnBorderEnabled
-          ? (this.content?.columnBorderWidth || 1) + "px"
-          : "0px",
-        "--ww-column-border-style": this.content?.columnBorderStyle || "solid",
-        "--ww-column-border-color": this.content?.columnBorderColor || "var(--ag-border-color)",
-        // Row border width for gap fix
-        "--ww-row-border-gap":
-          this.content?.rowBorderEnabled !== false
-            ? (this.content?.rowBorderWidth || 1) + "px"
-            : "0px",
-        // Header border
-        "--ww-header-border-width": this.content?.headerBorderWidth || "1px",
-        "--ww-header-border-style": this.content?.headerBorderStyle || "solid",
-        "--ww-header-border-color": this.content?.headerBorderColor,
       };
     },
     theme() {
@@ -1262,6 +1246,18 @@ export default {
           rowBorderParam.style = this.content.rowBorderStyle;
         if (this.content?.rowBorderWidth)
           rowBorderParam.width = this.content.rowBorderWidth;
+      }
+
+      // Build columnBorder param
+      let columnBorderParam = undefined;
+      if (this.content?.columnBorderEnabled) {
+        columnBorderParam = {};
+        if (this.content?.columnBorderColor)
+          columnBorderParam.color = this.content.columnBorderColor;
+        if (this.content?.columnBorderStyle)
+          columnBorderParam.style = this.content.columnBorderStyle;
+        if (this.content?.columnBorderWidth)
+          columnBorderParam.width = this.content.columnBorderWidth;
       }
 
       // Build headerColumnBorder param
@@ -1305,6 +1301,7 @@ export default {
           : "none",
         wrapperBorderRadius: this.content?.wrapperBorderRadius,
         rowBorder: rowBorderParam,
+        columnBorder: columnBorderParam,
         headerColumnBorder: headerColumnBorderParam,
         headerColumnBorderHeight: this.content?.headerColumnBorderEnabled
           ? this.content?.headerColumnBorderHeight
@@ -1751,30 +1748,6 @@ export default {
         justify-content: flex-start;
       }
     }
-
-    // Selection column alignment (checkbox uses .ag-cell-wrapper, not .ag-cell-value)
-    &.-center .ag-cell-wrapper {
-      justify-content: center;
-    }
-    &.-right .ag-cell-wrapper {
-      justify-content: flex-end;
-    }
-    &.-left .ag-cell-wrapper {
-      justify-content: flex-start;
-    }
-  }
-
-  // Selection column header alignment
-  :deep(.ag-header-cell) {
-    &.-center .ag-header-select-all {
-      justify-content: center;
-    }
-    &.-right .ag-header-select-all {
-      justify-content: flex-end;
-    }
-    &.-left .ag-header-select-all {
-      justify-content: flex-start;
-    }
   }
 
   // Cell editing border customization
@@ -1782,12 +1755,6 @@ export default {
     border-color: var(--ww-cell-editing-border-color) !important;
     border-width: var(--ww-cell-editing-border-width, 2px) !important;
     border-style: var(--ww-cell-editing-border-style, solid) !important;
-
-    // Remove default input focus shadow (blur) in edit mode
-    input[class^=ag-]:focus,
-    textarea[class^=ag-]:focus {
-      box-shadow: none !important;
-    }
 
     // Respect cell alignment in edit mode
     &.-center input {
@@ -1854,31 +1821,6 @@ export default {
     background-color: var(--ww-header-divider-hover-color, var(--ww-header-divider-color)) !important;
   }
 
-  // Column borders (vertical between cells) via ::before pseudo-element
-  // Uses ::before to extend through the row border area, eliminating the 1px gap
-  &.column-borders :deep(.ag-cell:not(:last-child)) {
-    position: relative;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: calc(-1 * var(--ww-row-border-gap, 0px));
-      width: 0;
-      border-right: var(--ww-column-border-width, 1px) var(--ww-column-border-style, solid) var(--ww-column-border-color);
-      pointer-events: none;
-      z-index: 2;
-    }
-  }
-
-  // Header bottom border
-  :deep(.ag-header) {
-    border-bottom-width: var(--ww-header-border-width, 1px) !important;
-    border-bottom-style: var(--ww-header-border-style, solid) !important;
-    border-bottom-color: var(--ww-header-border-color, var(--ag-border-color)) !important;
-  }
-
   // Drag handle column
   :deep(.ag-drag-handle-cell) {
     padding: 0 !important;
@@ -1888,12 +1830,9 @@ export default {
     }
   }
 
-  // Ensure cells establish a containing block for ::after overlay
-  // and cell content sits above the overlay
+  // Ensure cell content sits above the hover/selection overlay
   :deep(.ww-cell-editable),
   :deep(.ww-cell-non-editable) {
-    position: relative;
-
     .ag-cell-wrapper,
     .ag-cell-value {
       position: relative;
