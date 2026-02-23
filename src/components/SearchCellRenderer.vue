@@ -4,7 +4,13 @@
             <wwLayoutItemContext
                 is-repeat
                 :index="params.node.sourceRowIndex"
-                :data="{ value: params.value, row: params.data }"
+                :data="{
+                    value: params.value,
+                    row: params.data,
+                    searchOpen: searchState.open,
+                    searchText: searchState.text,
+                    searchEditingCell: searchState.editingCell,
+                }"
             >
                 <wwElement v-bind="params.containerId" class="search-cell-flexbox"></wwElement>
             </wwLayoutItemContext>
@@ -23,6 +29,11 @@ const DEFAULT_SEARCH_ICON =
 
 export default {
     name: "SearchCellRenderer",
+    inject: {
+        searchState: {
+            default: () => ({ open: false, text: "", editingCell: null }),
+        },
+    },
     props: {
         params: {
             type: Object,
@@ -107,6 +118,12 @@ export default {
     opacity: 0;
 }
 .search-icon-hover:hover .search-cell-icon {
+    opacity: 1;
+}
+.search-icon-hoverAndEditing .search-cell-icon {
+    opacity: 0;
+}
+.search-icon-hoverAndEditing:hover .search-cell-icon {
     opacity: 1;
 }
 </style>

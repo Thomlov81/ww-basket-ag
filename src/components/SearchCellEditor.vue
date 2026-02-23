@@ -1,14 +1,25 @@
 <template>
-    <input
-        ref="input"
-        class="search-cell-editor"
-        type="text"
-        v-model="searchText"
-        @input="onInput"
-    />
+    <div class="search-cell-editor-wrapper">
+        <input
+            ref="input"
+            class="search-cell-editor"
+            type="text"
+            v-model="searchText"
+            @input="onInput"
+        />
+        <div
+            v-if="showIcon"
+            class="search-cell-icon"
+            :style="iconStyle"
+            v-html="iconHtml"
+        ></div>
+    </div>
 </template>
 
 <script>
+const DEFAULT_SEARCH_ICON =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" /></svg>';
+
 export default {
     name: "SearchCellEditor",
     props: {
@@ -20,7 +31,30 @@ export default {
     data() {
         return {
             searchText: "",
+            iconHtml: DEFAULT_SEARCH_ICON,
         };
+    },
+    computed: {
+        showIcon() {
+            const v = this.params?.searchIconVisibility || "always";
+            return v === "always" || v === "editing" || v === "hoverAndEditing";
+        },
+        iconStyle() {
+            return {
+                color: this.params?.searchIconColor || "#9CA3AF",
+                right: (this.params?.searchIconPaddingRight ?? 8) + "px",
+            };
+        },
+    },
+    async beforeMount() {
+        const getIcon = this.params?.getIcon;
+        const iconType = this.params?.searchIconType;
+        if (getIcon && iconType) {
+            const resolved = await getIcon(iconType);
+            if (resolved) {
+                this.iconHtml = resolved;
+            }
+        }
     },
     mounted() {
         this.$nextTick(() => {
@@ -54,7 +88,14 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+.search-cell-editor-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
 .search-cell-editor {
     width: 100%;
     height: 100%;
@@ -62,7 +103,23 @@ export default {
     outline: none;
     padding: 0 8px;
     font: inherit;
-    background: transparent;
+    background: white;
     box-sizing: border-box;
+}
+.search-cell-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+
+    :deep(svg) {
+        width: 100%;
+        height: 100%;
+    }
 }
 </style>

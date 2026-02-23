@@ -1857,6 +1857,7 @@ export default {
                     { value: "always", label: "Always", default: true },
                     { value: "editing", label: "Editing only" },
                     { value: "hover", label: "Hover" },
+                    { value: "hoverAndEditing", label: "Hover + Editing" },
                   ],
                 },
                 hidden: array?.item?.cellDataType !== "search",

@@ -64,9 +64,11 @@ import {
   watchEffect,
   computed,
   inject,
+  provide,
   watch,
   nextTick,
   ref,
+  reactive,
 } from "vue";
 import { AgGridVue } from "ag-grid-vue3";
 import {
@@ -235,21 +237,36 @@ export default {
         readonly: true,
       });
 
+    const searchState = reactive({
+      open: false,
+      text: "",
+      editingCell: null,
+    });
+
     const onSearchEditingStarted = (cellInfo) => {
       setSearchOpen(true);
       setSearchText("");
       setSearchEditingCell(cellInfo);
+      searchState.open = true;
+      searchState.text = "";
+      searchState.editingCell = cellInfo;
     };
 
     const onSearchTextChanged = (text) => {
       setSearchText(text);
+      searchState.text = text;
     };
 
     const onSearchEditingStopped = () => {
       setSearchOpen(false);
       setSearchText("");
       setSearchEditingCell(null);
+      searchState.open = false;
+      searchState.text = "";
+      searchState.editingCell = null;
     };
+
+    provide("searchState", searchState);
 
     // Helper to get effective hide value based on breakpoint
     const getColumnHide = (col, breakpoint) => {
@@ -1091,6 +1108,11 @@ export default {
                 onSearchEditingStarted: this.onSearchEditingStarted,
                 onSearchTextChanged: this.onSearchTextChanged,
                 onSearchEditingStopped: this.onSearchEditingStopped,
+                searchIconColor: col?.searchIconColor,
+                searchIconPaddingRight: col?.searchIconPaddingRight,
+                searchIconVisibility: col?.searchIconVisibility,
+                searchIconType: col?.searchIcon,
+                getIcon: this.getIcon,
               },
               editable: true,
               sortable: col?.sortable,
@@ -1841,6 +1863,8 @@ export default {
     border-color: var(--ww-cell-editing-border-color) !important;
     border-width: var(--ww-cell-editing-border-width, 2px) !important;
     border-style: var(--ww-cell-editing-border-style, solid) !important;
+    box-shadow: none !important;
+    outline: none !important;
 
     // Respect cell alignment in edit mode
     &.-center input {
