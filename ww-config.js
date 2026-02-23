@@ -377,6 +377,10 @@ export default {
       label: "Apply Column Overrides",
       action: "updateColumnOverrides",
     },
+    {
+      label: "Stop search editing",
+      action: "stopSearchEditing",
+    },
   ],
   properties: {
     layout: {
@@ -1543,6 +1547,7 @@ export default {
                     { value: "image", label: "Image" },
                     { value: "action", label: "Action" },
                     { value: "custom", label: "Custom" },
+                    { value: "search", label: "Search" },
                   ],
                 },
               },
@@ -1555,6 +1560,15 @@ export default {
                 editorOnly: true,
                 hidden: array?.item?.cellDataType !== "custom",
               },
+              searchInfo: {
+                type: "InfoBox",
+                options: {
+                  variant: "warning",
+                  content: "To select your custom cell component, use the Layout view",
+                },
+                editorOnly: true,
+                hidden: array?.item?.cellDataType !== "search",
+              },
               field: {
                 label: "Key",
                 type: "Text",
@@ -1566,7 +1580,8 @@ export default {
                 hidden:
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
-                  array?.item?.cellDataType === "custom",
+                  array?.item?.cellDataType === "custom" ||
+                  array?.item?.cellDataType === "search",
               },
               displayLabelFormula: {
                 label: "Display value",
@@ -1581,7 +1596,8 @@ export default {
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
                   !array?.item?.useCustomLabel ||
-                  array?.item?.cellDataType === "custom",
+                  array?.item?.cellDataType === "custom" ||
+                  array?.item?.cellDataType === "search",
               },
               widthAlgo: {
                 type: "TextRadioGroup",
@@ -1758,7 +1774,8 @@ export default {
                 hidden:
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
-                  array?.item?.cellDataType === "custom",
+                  array?.item?.cellDataType === "custom" ||
+                  array?.item?.cellDataType === "search",
                 bindable: true,
               },
               filter: {
@@ -1803,16 +1820,68 @@ export default {
                 },
                 hidden: array?.item?.cellDataType !== "image",
               },
+              searchIcon: {
+                label: "Search Icon",
+                type: "TextSelect",
+                options: {
+                  options: [
+                    { value: undefined, label: "Default (magnifying glass)", default: true },
+                  ],
+                },
+                hidden: array?.item?.cellDataType !== "search",
+              },
+              searchIconColor: {
+                label: "Icon Color",
+                type: "Color",
+                options: { nullable: true },
+                defaultValue: "#9CA3AF",
+                hidden: array?.item?.cellDataType !== "search",
+              },
+              searchIconPaddingRight: {
+                label: "Icon Right Padding",
+                type: "Number",
+                options: {
+                  min: 0,
+                  max: 50,
+                  step: 1,
+                  noRange: true,
+                  defaultValue: 8,
+                },
+                hidden: array?.item?.cellDataType !== "search",
+              },
+              searchIconVisibility: {
+                label: "Icon Visibility",
+                type: "TextSelect",
+                options: {
+                  options: [
+                    { value: "always", label: "Always", default: true },
+                    { value: "editing", label: "Editing only" },
+                    { value: "hover", label: "Hover" },
+                  ],
+                },
+                hidden: array?.item?.cellDataType !== "search",
+              },
             },
             propertiesOrder: [
               "headerName",
               "field",
               "cellDataType",
               "info",
+              "searchInfo",
               "actionName",
               "actionLabel",
               "imageWidth",
               "imageHeight",
+              {
+                label: "Search Icon",
+                isCollapsible: true,
+                properties: [
+                  "searchIcon",
+                  "searchIconColor",
+                  "searchIconPaddingRight",
+                  "searchIconVisibility",
+                ],
+              },
               ,
               "useCustomLabel",
               "displayLabelFormula",

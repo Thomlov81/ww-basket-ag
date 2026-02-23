@@ -26,12 +26,14 @@
       enableCellTextSelection
       ensureDomOrder
       :singleClickEdit="content?.singleClickEdit || false"
+      :stopEditingWhenCellsLoseFocus="true"
       :row-drag-managed="true"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
       @cell-value-changed="onCellValueChanged"
       @cell-editing-started="onCellEditingStarted"
+      @cell-editing-stopped="onCellEditingStopped"
       @filter-changed="onFilterChanged"
       @sort-changed="onSortChanged"
       @row-clicked="onRowClicked"
@@ -83,6 +85,8 @@ import ActionCellRenderer from "./components/ActionCellRenderer.vue";
 import ImageCellRenderer from "./components/ImageCellRenderer.vue";
 import WewebCellRenderer from "./components/WewebCellRenderer.vue";
 import DragCellRenderer from "./components/DragCellRenderer.vue";
+import SearchCellRenderer from "./components/SearchCellRenderer.vue";
+import SearchCellEditor from "./components/SearchCellEditor.vue";
 
 // TODO: maybe register less modules
 // TODO: maybe register modules per grid instead of globally
@@ -95,6 +99,8 @@ export default {
     ImageCellRenderer,
     WewebCellRenderer,
     DragCellRenderer,
+    SearchCellRenderer,
+    SearchCellEditor,
   },
   props: {
     content: {
@@ -201,6 +207,49 @@ export default {
         },
         readonly: true,
       });
+
+    const { value: searchOpen, setValue: setSearchOpen } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: "searchOpen",
+        type: "boolean",
+        defaultValue: false,
+        readonly: true,
+      });
+
+    const { value: searchText, setValue: setSearchText } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: "searchText",
+        type: "string",
+        defaultValue: "",
+        readonly: true,
+      });
+
+    const { value: searchEditingCell, setValue: setSearchEditingCell } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: "searchEditingCell",
+        type: "object",
+        defaultValue: null,
+        readonly: true,
+      });
+
+    const onSearchEditingStarted = (cellInfo) => {
+      setSearchOpen(true);
+      setSearchText("");
+      setSearchEditingCell(cellInfo);
+    };
+
+    const onSearchTextChanged = (text) => {
+      setSearchText(text);
+    };
+
+    const onSearchEditingStopped = () => {
+      setSearchOpen(false);
+      setSearchText("");
+      setSearchEditingCell(null);
+    };
 
     // Helper to get effective hide value based on breakpoint
     const getColumnHide = (col, breakpoint) => {
@@ -799,6 +848,10 @@ export default {
       initialState,
       refreshData,
       rowData,
+      // Search column state
+      onSearchEditingStarted,
+      onSearchTextChanged,
+      onSearchEditingStopped,
       // Fill container mode
       containerHeight,
       initialContainerHeight,
@@ -1018,6 +1071,31 @@ export default {
               },
               sortable: col?.sortable,
               filter: col?.filter,
+            };
+          case "search":
+            return {
+              ...commonProperties,
+              headerName: effectiveHeaderName,
+              field: col?.field,
+              cellRenderer: "SearchCellRenderer",
+              cellRendererParams: {
+                containerId: col?.containerId,
+                searchIconColor: col?.searchIconColor,
+                searchIconPaddingRight: col?.searchIconPaddingRight,
+                searchIconVisibility: col?.searchIconVisibility,
+                searchIconType: col?.searchIcon,
+                getIcon: this.getIcon,
+              },
+              cellEditor: "SearchCellEditor",
+              cellEditorParams: {
+                onSearchEditingStarted: this.onSearchEditingStarted,
+                onSearchTextChanged: this.onSearchTextChanged,
+                onSearchEditingStopped: this.onSearchEditingStopped,
+              },
+              editable: true,
+              sortable: col?.sortable,
+              filter: col?.filter,
+              singleClickEdit: true,
             };
           case "image": {
             return {
@@ -1299,6 +1377,7 @@ export default {
         focusShadow: this.content?.focusShadow?.length
           ? this.content.focusShadow
           : "none",
+        cellEditingShadow: "none",
         wrapperBorderRadius: this.content?.wrapperBorderRadius,
         rowBorder: rowBorderParam,
         columnBorder: columnBorderParam,
@@ -1475,6 +1554,9 @@ export default {
         }, 10);
       });
     },
+    onCellEditingStopped() {
+      this.gridApi?.clearFocusedCell();
+    },
     onRowClicked(event) {
       this.$emit("trigger-event", {
         name: "rowClicked",
@@ -1524,6 +1606,10 @@ export default {
       if (rowNode) {
         rowNode.setSelected(false);
       }
+    },
+    stopSearchEditing() {
+      if (!this.gridApi) return;
+      this.gridApi.stopEditing();
     },
     getHeaderStyle(params) {
       const colDef = params.column?.getColDef();
@@ -1685,7 +1771,7 @@ export default {
 
         // We assume there will only be one custom column each time
         const columnIndex = (this.rawContent.columns || []).findIndex(
-          (col) => col?.cellDataType === "custom" && !col?.containerId
+          (col) => (col?.cellDataType === "custom" || col?.cellDataType === "search") && !col?.containerId
         );
         if (columnIndex === -1) return;
         const newColumns = [...this.rawContent.columns];
