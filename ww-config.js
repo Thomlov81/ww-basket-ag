@@ -51,6 +51,7 @@ export default {
           "headerHeightMode",
           "headerHeight",
           "headerPadding",
+          "headerTextTransform",
         ],
       },
       {
@@ -707,6 +708,23 @@ export default {
       options: {
         unitChoices: [{ value: "px", label: "px", min: 0, max: 50 }],
       },
+      responsive: true,
+      states: true,
+      classes: true,
+      bindable: true,
+    },
+    headerTextTransform: {
+      label: "Text Transform",
+      type: "TextSelect",
+      options: {
+        options: [
+          { value: "none", label: "None", default: true },
+          { value: "uppercase", label: "Uppercase" },
+          { value: "lowercase", label: "Lowercase" },
+          { value: "capitalize", label: "Title Case" },
+        ],
+      },
+      defaultValue: "none",
       responsive: true,
       states: true,
       classes: true,
@@ -1587,10 +1605,7 @@ export default {
                 label: "Display value",
                 type: "Formula",
                 options: {
-                  template: _.get(
-                    wwLib.wwUtils.getDataFromCollection(content.rowData)?.[0],
-                    array?.item?.field
-                  ),
+                  template: wwLib.wwUtils.getDataFromCollection(content.rowData)?.[0],
                 },
                 hidden:
                   array?.item?.cellDataType === "action" ||
@@ -1821,13 +1836,13 @@ export default {
                 hidden: array?.item?.cellDataType !== "image",
               },
               searchIcon: {
-                label: "Search Icon",
-                type: "TextSelect",
-                options: {
-                  options: [
-                    { value: undefined, label: "Default (magnifying glass)", default: true },
-                  ],
-                },
+                label: { en: "Icon" },
+                type: "SystemIcon",
+                bindable: true,
+                responsive: true,
+                states: true,
+                classes: true,
+                defaultValue: null,
                 hidden: array?.item?.cellDataType !== "search",
               },
               searchIconColor: {

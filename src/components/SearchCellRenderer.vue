@@ -1,6 +1,6 @@
 <template>
     <div class="search-cell-renderer" :class="visibilityClass">
-        <div class="search-cell-content">
+        <div class="search-cell-content" :style="contentStyle">
             <span v-if="hasValue" class="search-cell-value">{{ params.value }}</span>
             <span v-else-if="params.searchPlaceholder" class="search-cell-placeholder" :style="placeholderStyle">
                 {{ params.searchPlaceholder }}
@@ -68,9 +68,19 @@ export default {
             return style;
         },
         iconStyle() {
+            const paddingRight = this.params?.searchIconPaddingRight ?? 8;
+            const cellPadding = this.params?.cellHorizontalPadding ?? 0;
             return {
                 color: this.params?.searchIconColor || "#9CA3AF",
-                right: (this.params?.searchIconPaddingRight ?? 8) + "px",
+                right: (paddingRight - cellPadding) + "px",
+            };
+        },
+        contentStyle() {
+            const paddingRight = this.params?.searchIconPaddingRight ?? 8;
+            const cellPadding = this.params?.cellHorizontalPadding ?? 0;
+            const iconRight = paddingRight - cellPadding;
+            return {
+                paddingRight: Math.max(0, iconRight + 16) + "px",
             };
         },
         visibilityClass() {

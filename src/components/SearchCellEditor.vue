@@ -5,6 +5,7 @@
             class="search-cell-editor"
             type="text"
             v-model="searchText"
+            :style="inputStyle"
             @input="onInput"
         />
         <div
@@ -61,6 +62,12 @@ export default {
             return {
                 color: this.params?.searchIconColor || "#9CA3AF",
                 right: (this.params?.searchIconPaddingRight ?? 8) + "px",
+            };
+        },
+        inputStyle() {
+            const paddingRight = this.params?.searchIconPaddingRight ?? 8;
+            return {
+                paddingRight: (paddingRight + 16) + "px",
             };
         },
     },
@@ -120,7 +127,8 @@ export default {
     height: 100%;
     border: none;
     outline: none;
-    padding: 0 8px;
+    padding: 0;
+    padding-left: 8px;
     font: inherit;
     background: transparent;
     box-sizing: border-box;

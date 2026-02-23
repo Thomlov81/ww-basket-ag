@@ -940,7 +940,8 @@ export default {
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
-              : !!params.colDef?.editable;
+              : !!params.colDef?.editable ||
+                params.colDef?.cellRenderer === "WewebCellRenderer";
 
           const bgClass = isEditable
             ? "ww-cell-editable"
@@ -964,7 +965,8 @@ export default {
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
-              : !!params.colDef?.editable;
+              : !!params.colDef?.editable ||
+                params.colDef?.cellRenderer === "WewebCellRenderer";
           const style = {};
           if (isEditable) {
             if (editableBg) style.backgroundColor = editableBg;
@@ -1107,6 +1109,7 @@ export default {
                 searchPlaceholderColor: col?.searchPlaceholderColor,
                 searchPlaceholderFontSize: col?.searchPlaceholderFontSize,
                 searchPlaceholderFontFamily: col?.searchPlaceholderFontFamily,
+                cellHorizontalPadding: parseInt(this.content?.cellHorizontalPadding) || 0,
                 getIcon: this.getIcon,
               },
               cellEditor: "SearchCellEditor",
@@ -1119,6 +1122,7 @@ export default {
                 searchIconPaddingRight: col?.searchIconPaddingRight,
                 searchIconVisibility: col?.searchIconVisibility,
                 searchIconType: col?.searchIcon,
+                cellHorizontalPadding: parseInt(this.content?.cellHorizontalPadding) || 0,
                 getIcon: this.getIcon,
               },
               editable: true,
@@ -1152,7 +1156,7 @@ export default {
               result.valueFormatter = (params) => {
                 return this.resolveMappingFormula(
                   col?.displayLabelFormula,
-                  params.value
+                  params.data
                 );
               };
             }
@@ -1322,6 +1326,7 @@ export default {
             }),
         // Header padding
         "--ww-header-padding": this.content?.headerPadding,
+        "--ww-header-text-transform": this.content?.headerTextTransform || "none",
         // Header text color (used as fallback for settings icon color)
         "--ww-header-text-color": this.content?.headerTextColor,
         // Settings icon
@@ -1832,6 +1837,7 @@ export default {
   }
   :deep(.ag-header-cell) {
     padding: var(--ww-header-padding);
+    text-transform: var(--ww-header-text-transform, none);
 
     &.-center .ag-header-cell-label {
       justify-content: center;
