@@ -1585,7 +1585,11 @@ export default {
       });
     },
     onCellEditingStopped() {
-      this.gridApi?.clearFocusedCell();
+      setTimeout(() => {
+        if (!this.gridApi?.getEditingCells()?.length) {
+          this.gridApi?.clearFocusedCell();
+        }
+      }, 0);
     },
     onRowClicked(event) {
       this.$emit("trigger-event", {

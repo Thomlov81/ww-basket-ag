@@ -120,8 +120,10 @@ export default {
     white-space: nowrap;
 }
 :deep(.search-cell-flexbox) {
-    height: 100%;
-    flex: 1;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    overflow: visible;
 }
 .search-cell-icon {
     position: absolute;

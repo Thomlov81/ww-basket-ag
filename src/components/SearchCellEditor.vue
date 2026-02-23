@@ -126,6 +126,9 @@ export default {
     box-sizing: border-box;
 }
 :deep(.search-editor-flexbox) {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     overflow: visible;
 }
 .search-cell-icon {
