@@ -30,7 +30,7 @@ export default {
     },
     data() {
         return {
-            searchText: "",
+            searchText: this.params?.value ?? "",
             iconHtml: DEFAULT_SEARCH_ICON,
         };
     },
@@ -59,6 +59,7 @@ export default {
     mounted() {
         this.$nextTick(() => {
             this.$refs.input?.focus();
+            this.$refs.input?.select();
         });
         this.params.onSearchEditingStarted?.({
             rowIndex: this.params.node.sourceRowIndex,

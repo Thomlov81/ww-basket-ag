@@ -1089,9 +1089,11 @@ export default {
               sortable: col?.sortable,
               filter: col?.filter,
             };
-          case "search":
+          case "search": {
+            const searchAlignmentClass = col?.cellAlignment ? `-${col.cellAlignment}` : '';
             return {
               ...commonProperties,
+              cellClass: `ag-cell-search ${searchAlignmentClass}`.trim(),
               headerName: effectiveHeaderName,
               field: col?.field,
               cellRenderer: "SearchCellRenderer",
@@ -1123,6 +1125,7 @@ export default {
               filter: col?.filter,
               singleClickEdit: true,
             };
+          }
           case "image": {
             return {
               ...commonProperties,
@@ -1869,8 +1872,14 @@ export default {
     border-style: var(--ww-cell-editing-border-style, solid) !important;
     box-shadow: none !important;
     outline: none !important;
-    border-radius: 0 !important;
     background-color: transparent !important;
+
+    // Suppress AG Grid's built-in input border (prevents double border)
+    input.ag-input-field-input {
+      border: none !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
 
     // Respect cell alignment in edit mode
     &.-center input {
@@ -1888,6 +1897,17 @@ export default {
   :deep(.ag-cell-focus.ag-cell-inline-editing:focus-within) {
     box-shadow: none !important;
     outline: none !important;
+    border-color: var(--ww-cell-editing-border-color) !important;
+    border-width: var(--ww-cell-editing-border-width, 2px) !important;
+    border-style: var(--ww-cell-editing-border-style, solid) !important;
+  }
+
+  // Allow search cell content to overflow (for floating dropdowns)
+  :deep(.ag-cell-search) {
+    overflow: visible !important;
+  }
+  :deep(.ag-cell-search .ag-cell-value) {
+    overflow: visible !important;
   }
 
   // Reserve space in the header for the settings icon
