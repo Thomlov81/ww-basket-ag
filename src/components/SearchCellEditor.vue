@@ -103,7 +103,7 @@ export default {
     outline: none;
     padding: 0 8px;
     font: inherit;
-    background: white;
+    background: transparent;
     box-sizing: border-box;
 }
 .search-cell-icon {

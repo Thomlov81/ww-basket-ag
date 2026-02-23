@@ -1101,6 +1101,10 @@ export default {
                 searchIconPaddingRight: col?.searchIconPaddingRight,
                 searchIconVisibility: col?.searchIconVisibility,
                 searchIconType: col?.searchIcon,
+                searchPlaceholder: col?.searchPlaceholder,
+                searchPlaceholderColor: col?.searchPlaceholderColor,
+                searchPlaceholderFontSize: col?.searchPlaceholderFontSize,
+                searchPlaceholderFontFamily: col?.searchPlaceholderFontFamily,
                 getIcon: this.getIcon,
               },
               cellEditor: "SearchCellEditor",
@@ -1865,6 +1869,8 @@ export default {
     border-style: var(--ww-cell-editing-border-style, solid) !important;
     box-shadow: none !important;
     outline: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
 
     // Respect cell alignment in edit mode
     &.-center input {
@@ -1876,6 +1882,12 @@ export default {
     &.-left input {
       text-align: left;
     }
+  }
+
+  // Suppress AG Grid focus border on cells being edited (prevents double border)
+  :deep(.ag-cell-focus.ag-cell-inline-editing:focus-within) {
+    box-shadow: none !important;
+    outline: none !important;
   }
 
   // Reserve space in the header for the settings icon

@@ -1,15 +1,19 @@
 <template>
     <div class="search-cell-renderer" :class="visibilityClass">
         <div class="search-cell-content">
+            <span v-if="hasValue" class="search-cell-value">{{ params.value }}</span>
+            <span v-else-if="params.searchPlaceholder" class="search-cell-placeholder" :style="placeholderStyle">
+                {{ params.searchPlaceholder }}
+            </span>
             <wwLayoutItemContext
                 is-repeat
                 :index="params.node.sourceRowIndex"
                 :data="{
                     value: params.value,
                     row: params.data,
-                    searchOpen: searchState.open,
-                    searchText: searchState.text,
-                    searchEditingCell: searchState.editingCell,
+                    searchOpen: isThisCellEditing,
+                    searchText: isThisCellEditing ? searchState.text : '',
+                    searchEditingCell: isThisCellEditing ? searchState.editingCell : null,
                 }"
             >
                 <wwElement v-bind="params.containerId" class="search-cell-flexbox"></wwElement>
@@ -46,6 +50,23 @@ export default {
         };
     },
     computed: {
+        isThisCellEditing() {
+            if (!this.searchState?.editingCell) return false;
+            return (
+                this.searchState.editingCell.rowIndex === this.params.node.sourceRowIndex &&
+                this.searchState.editingCell.colId === this.params.column?.getColId()
+            );
+        },
+        hasValue() {
+            return this.params.value != null && this.params.value !== "";
+        },
+        placeholderStyle() {
+            const style = {};
+            if (this.params.searchPlaceholderColor) style.color = this.params.searchPlaceholderColor;
+            if (this.params.searchPlaceholderFontSize) style.fontSize = this.params.searchPlaceholderFontSize;
+            if (this.params.searchPlaceholderFontFamily) style.fontFamily = this.params.searchPlaceholderFontFamily;
+            return style;
+        },
         iconStyle() {
             return {
                 color: this.params?.searchIconColor || "#9CA3AF",
@@ -85,6 +106,18 @@ export default {
     min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+}
+.search-cell-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.search-cell-placeholder {
+    color: #9CA3AF;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 :deep(.search-cell-flexbox) {
     height: 100%;

@@ -1862,6 +1862,33 @@ export default {
                 },
                 hidden: array?.item?.cellDataType !== "search",
               },
+              searchPlaceholder: {
+                label: "Placeholder Text",
+                type: "Text",
+                defaultValue: "",
+                hidden: array?.item?.cellDataType !== "search",
+              },
+              searchPlaceholderColor: {
+                label: "Placeholder Color",
+                type: "Color",
+                options: { nullable: true },
+                defaultValue: "#9CA3AF",
+                hidden: array?.item?.cellDataType !== "search",
+              },
+              searchPlaceholderFontSize: {
+                label: "Placeholder Font Size",
+                type: "Length",
+                options: {
+                  noRange: true,
+                  unitChoices: [{ value: "px", label: "px", min: 8, max: 32 }],
+                },
+                hidden: array?.item?.cellDataType !== "search",
+              },
+              searchPlaceholderFontFamily: {
+                label: "Placeholder Font",
+                type: "FontFamily",
+                hidden: array?.item?.cellDataType !== "search",
+              },
             },
             propertiesOrder: [
               "headerName",
@@ -1881,6 +1908,16 @@ export default {
                   "searchIconColor",
                   "searchIconPaddingRight",
                   "searchIconVisibility",
+                ],
+              },
+              {
+                label: "Search Placeholder",
+                isCollapsible: true,
+                properties: [
+                  "searchPlaceholder",
+                  "searchPlaceholderColor",
+                  "searchPlaceholderFontSize",
+                  "searchPlaceholderFontFamily",
                 ],
               },
               ,
