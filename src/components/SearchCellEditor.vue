@@ -13,6 +13,19 @@
             :style="iconStyle"
             v-html="iconHtml"
         ></div>
+        <wwLayoutItemContext
+            is-repeat
+            :index="params.node.sourceRowIndex"
+            :data="{
+                value: params.value,
+                row: params.data,
+                searchOpen: true,
+                searchText: searchText,
+                searchEditingCell: searchState.editingCell,
+            }"
+        >
+            <wwElement v-bind="params.containerId" class="search-editor-flexbox"></wwElement>
+        </wwLayoutItemContext>
     </div>
 </template>
 
@@ -22,6 +35,11 @@ const DEFAULT_SEARCH_ICON =
 
 export default {
     name: "SearchCellEditor",
+    inject: {
+        searchState: {
+            default: () => ({ open: false, text: "", editingCell: null }),
+        },
+    },
     props: {
         params: {
             type: Object,
@@ -106,6 +124,9 @@ export default {
     font: inherit;
     background: transparent;
     box-sizing: border-box;
+}
+:deep(.search-editor-flexbox) {
+    overflow: visible;
 }
 .search-cell-icon {
     position: absolute;

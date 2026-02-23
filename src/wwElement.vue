@@ -1111,6 +1111,7 @@ export default {
               },
               cellEditor: "SearchCellEditor",
               cellEditorParams: {
+                containerId: col?.containerId,
                 onSearchEditingStarted: this.onSearchEditingStarted,
                 onSearchTextChanged: this.onSearchTextChanged,
                 onSearchEditingStopped: this.onSearchEditingStopped,
@@ -1907,6 +1908,9 @@ export default {
     overflow: visible !important;
   }
   :deep(.ag-cell-search .ag-cell-value) {
+    overflow: visible !important;
+  }
+  :deep(.ag-cell-search .ag-cell-edit-wrapper) {
     overflow: visible !important;
   }
 
