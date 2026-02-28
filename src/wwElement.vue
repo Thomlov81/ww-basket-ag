@@ -27,7 +27,8 @@
       ensureDomOrder
       :singleClickEdit="content?.singleClickEdit || false"
       :stopEditingWhenCellsLoseFocus="true"
-      :tooltipShowDelay="500"
+      :tooltipShowDelay="750"
+      :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="true"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
@@ -914,13 +915,7 @@ export default {
         resizable: this.content?.resizableColumns,
         autoHeaderHeight: this.content?.headerHeightMode === "auto",
         wrapHeaderText: this.content?.headerHeightMode === "auto",
-        tooltipValueGetter: (params) => {
-          const renderer = params.colDef?.cellRenderer;
-          if (renderer) return undefined;
-          const value = params.valueFormatted ?? params.value;
-          if (value == null || value === '') return undefined;
-          return String(value);
-        },
+        tooltipValueGetter: (params) => params.value,
         cellClass:
           this.content?.cellAlignmentMode === "custom"
             ? `-${this.content?.cellAlignment || "left"}`
@@ -1164,10 +1159,6 @@ export default {
                   : !!col?.editable,
             };
             if (col?.cellDataType === "number") {
-              result.cellEditor = "agTextCellEditor";
-              result.cellEditorParams = {
-                allowedCharPattern: '\\d\\-\\,\\.',
-              };
               result.valueParser = (params) => {
                 const val = Number(String(params.newValue).replace(',', '.'));
                 return isNaN(val) ? params.oldValue : val;
@@ -1599,20 +1590,43 @@ export default {
         },
       });
     },
-    onCellEditingStarted() {
-      if (!this.content?.selectAllOnEditStart) return;
+    onCellEditingStarted(event) {
+      const colDef = event.column?.getColDef();
+      const col = this.content?.columns?.find(
+        (c) => c?.field === colDef?.field
+      );
+
       this.$nextTick(() => {
         setTimeout(() => {
           const input = this.$el?.querySelector(
             ".ag-cell-inline-editing input"
           );
-          if (input) {
+          if (!input) return;
+
+          if (this.content?.selectAllOnEditStart) {
             input.select();
+          }
+
+          if (col?.cellDataType === "number") {
+            const numericPattern = /^[\d\-\,\.]*$/;
+            this._numericInputHandler = (e) => {
+              if (!numericPattern.test(e.data) && e.data) {
+                e.preventDefault();
+              }
+            };
+            input.addEventListener("beforeinput", this._numericInputHandler);
           }
         }, 10);
       });
     },
     onCellEditingStopped() {
+      if (this._numericInputHandler) {
+        const input = this.$el?.querySelector("input");
+        if (input) {
+          input.removeEventListener("beforeinput", this._numericInputHandler);
+        }
+        this._numericInputHandler = null;
+      }
       setTimeout(() => {
         if (!this.gridApi?.getEditingCells()?.length) {
           this.gridApi?.clearFocusedCell();
@@ -1885,6 +1899,7 @@ export default {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      min-width: 0;
     }
 
     &.-right .ag-cell-value {
@@ -1938,11 +1953,13 @@ export default {
   }
 
   // Prevent AG Grid's focus border from overriding column/row borders on non-editing cells
+  // Uses 1px transparent (not none) to match the reserved border-width on all .ag-cell,
+  // preventing any layout shift when focus is applied.
   :deep(.ag-cell-focus:not(.ag-cell-inline-editing):focus-within) {
     border-right: var(--ag-cell-horizontal-border) !important;
     border-bottom: var(--ag-row-border) !important;
-    border-top: none !important;
-    border-left: none !important;
+    border-top: 1px solid transparent !important;
+    border-left: 1px solid transparent !important;
     outline: none !important;
     box-shadow: none !important;
   }
@@ -2019,6 +2036,8 @@ export default {
     border-bottom: none !important;
   }
   :deep(.ag-cell) {
+    border-top: 1px solid transparent;
+    border-left: 1px solid transparent;
     border-bottom: var(--ag-row-border);
   }
 
