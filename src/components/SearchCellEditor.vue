@@ -128,9 +128,9 @@ export default {
     border: none;
     outline: none;
     padding: 0;
-    padding-left: 8px;
+    padding-left: calc(var(--ag-cell-horizontal-padding, 8px) - var(--ww-cell-editing-border-width, 2px));
     font: inherit;
-    background: transparent;
+    background-color: var(--ag-background-color, #fff);
     box-sizing: border-box;
 }
 :deep(.search-editor-flexbox) {

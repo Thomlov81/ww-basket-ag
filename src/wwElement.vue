@@ -27,6 +27,7 @@
       ensureDomOrder
       :singleClickEdit="content?.singleClickEdit || false"
       :stopEditingWhenCellsLoseFocus="true"
+      :suppressCellFocus="true"
       :row-drag-managed="true"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
@@ -913,6 +914,13 @@ export default {
         resizable: this.content?.resizableColumns,
         autoHeaderHeight: this.content?.headerHeightMode === "auto",
         wrapHeaderText: this.content?.headerHeightMode === "auto",
+        tooltipValueGetter: (params) => {
+          const renderer = params.colDef?.cellRenderer;
+          if (renderer) return undefined;
+          const value = params.valueFormatted ?? params.value;
+          if (value == null || value === '') return undefined;
+          return String(value);
+        },
         cellClass:
           this.content?.cellAlignmentMode === "custom"
             ? `-${this.content?.cellAlignment || "left"}`
@@ -1155,6 +1163,16 @@ export default {
                   ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
                   : !!col?.editable,
             };
+            if (col?.cellDataType === "number") {
+              result.cellEditor = "agNumberCellEditor";
+              result.cellEditorParams = {
+                preventStepping: true,
+              };
+              result.valueParser = (params) => {
+                const val = Number(params.newValue);
+                return isNaN(val) ? params.oldValue : val;
+              };
+            }
             if (col?.useCustomLabel) {
               result.valueFormatter = (params) => {
                 return this.resolveMappingFormula(
@@ -1865,6 +1883,9 @@ export default {
   :deep(.ag-cell) {
     .ag-cell-value {
       display: flex;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &.-right {
@@ -1898,6 +1919,8 @@ export default {
       border: none !important;
       box-shadow: none !important;
       outline: none !important;
+      padding-left: calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
+      padding-right: calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
     }
 
     // Respect cell alignment in edit mode
@@ -1994,14 +2017,6 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
-  }
-
-  // Prevent AG Grid's focus border from overriding column/row borders
-  :deep(.ag-cell-focus:not(.ag-cell-inline-editing):focus-within) {
-    border-right: var(--ag-cell-horizontal-border) !important;
-    border-bottom: var(--ag-row-border) !important;
-    border-top: none !important;
-    border-left: none !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close
