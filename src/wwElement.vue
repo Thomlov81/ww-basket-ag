@@ -27,7 +27,7 @@
       ensureDomOrder
       :singleClickEdit="content?.singleClickEdit || false"
       :stopEditingWhenCellsLoseFocus="true"
-      :suppressCellFocus="true"
+      :tooltipShowDelay="500"
       :row-drag-managed="true"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
@@ -1164,12 +1164,12 @@ export default {
                   : !!col?.editable,
             };
             if (col?.cellDataType === "number") {
-              result.cellEditor = "agNumberCellEditor";
+              result.cellEditor = "agTextCellEditor";
               result.cellEditorParams = {
-                preventStepping: true,
+                allowedCharPattern: '\\d\\-\\,\\.',
               };
               result.valueParser = (params) => {
-                const val = Number(params.newValue);
+                const val = Number(String(params.newValue).replace(',', '.'));
                 return isNaN(val) ? params.oldValue : val;
               };
             }
@@ -1882,26 +1882,19 @@ export default {
   }
   :deep(.ag-cell) {
     .ag-cell-value {
-      display: flex;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    &.-right {
-      .ag-cell-value {
-        justify-content: flex-end;
-      }
+    &.-right .ag-cell-value {
+      text-align: right;
     }
-    &.-center {
-      .ag-cell-value {
-        justify-content: center;
-      }
+    &.-center .ag-cell-value {
+      text-align: center;
     }
-    &.-left {
-      .ag-cell-value {
-        justify-content: flex-start;
-      }
+    &.-left .ag-cell-value {
+      text-align: left;
     }
   }
 
@@ -1942,6 +1935,16 @@ export default {
     border-color: var(--ww-cell-editing-border-color) !important;
     border-width: var(--ww-cell-editing-border-width, 2px) !important;
     border-style: var(--ww-cell-editing-border-style, solid) !important;
+  }
+
+  // Prevent AG Grid's focus border from overriding column/row borders on non-editing cells
+  :deep(.ag-cell-focus:not(.ag-cell-inline-editing):focus-within) {
+    border-right: var(--ag-cell-horizontal-border) !important;
+    border-bottom: var(--ag-row-border) !important;
+    border-top: none !important;
+    border-left: none !important;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   // Allow search cell content to overflow (for floating dropdowns)

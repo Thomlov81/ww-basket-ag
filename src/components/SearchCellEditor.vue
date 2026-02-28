@@ -131,6 +131,7 @@ export default {
     padding-left: calc(var(--ag-cell-horizontal-padding, 8px) - var(--ww-cell-editing-border-width, 2px));
     font: inherit;
     background-color: var(--ag-background-color, #fff);
+    border-radius: calc(var(--ag-card-radius, 0px) - var(--ww-cell-editing-border-width, 2px));
     box-sizing: border-box;
 }
 :deep(.search-editor-flexbox) {
