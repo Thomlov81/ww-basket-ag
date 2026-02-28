@@ -1150,7 +1150,10 @@ export default {
               field: col?.field,
               sortable: col?.sortable,
               filter: col?.filter,
-              editable: col?.editable,
+              editable:
+                col?.editable && col?.useEditableFormula && col?.editableFormula
+                  ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
+                  : !!col?.editable,
             };
             if (col?.useCustomLabel) {
               result.valueFormatter = (params) => {
@@ -1336,6 +1339,8 @@ export default {
         // Header column resize divider
         "--ww-header-divider-color": this.content?.headerDividerColor,
         "--ww-header-divider-hover-color": this.content?.headerDividerHoverColor,
+        // Wrapper border radius
+        "--ww-data-grid_wrapper-borderRadius": this.content?.wrapperBorderRadius,
         // Cell editing border
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
@@ -1413,7 +1418,7 @@ export default {
           ? this.content.focusShadow
           : "none",
         cellEditingShadow: "none",
-        wrapperBorderRadius: this.content?.wrapperBorderRadius,
+        wrapperBorderRadius: 0,
         rowBorder: rowBorderParam,
         columnBorder: columnBorderParam,
         headerColumnBorder: headerColumnBorderParam,
@@ -1831,6 +1836,9 @@ export default {
 <style scoped lang="scss">
 .ww-datagrid {
   position: relative;
+  :deep(.ag-root-wrapper) {
+    border-radius: var(--ww-data-grid_wrapper-borderRadius) !important;
+  }
   :deep(.ag-cell-wrapper),
   :deep(.ag-cell-value) {
     height: 100%;
@@ -1986,6 +1994,14 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
+  }
+
+  // Prevent AG Grid's focus border from overriding column/row borders
+  :deep(.ag-cell-focus:not(.ag-cell-inline-editing):focus-within) {
+    border-right: var(--ag-cell-horizontal-border) !important;
+    border-bottom: var(--ag-row-border) !important;
+    border-top: none !important;
+    border-left: none !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close

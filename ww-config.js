@@ -1793,6 +1793,30 @@ export default {
                   array?.item?.cellDataType === "search",
                 bindable: true,
               },
+              useEditableFormula: {
+                label: "Conditional editable",
+                type: "OnOff",
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image" ||
+                  array?.item?.cellDataType === "custom" ||
+                  array?.item?.cellDataType === "search" ||
+                  !array?.item?.editable,
+              },
+              editableFormula: {
+                label: "Editable condition",
+                type: "Formula",
+                options: {
+                  template: wwLib.wwUtils.getDataFromCollection(content.rowData)?.[0],
+                },
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image" ||
+                  array?.item?.cellDataType === "custom" ||
+                  array?.item?.cellDataType === "search" ||
+                  !array?.item?.editable ||
+                  !array?.item?.useEditableFormula,
+              },
               filter: {
                 label: "Filter",
                 type: "OnOff",
@@ -1960,6 +1984,8 @@ export default {
                   "allowColumnOverride",
                   "showHeader",
                   "editable",
+                  "useEditableFormula",
+                  "editableFormula",
                   "filter",
                   "sortable",
                 ],
@@ -2300,14 +2326,23 @@ export default {
     },
     wrapperBorderRadius: {
       label: { en: "Border Radius" },
-      type: "Length",
+      type: "Spacing",
       options: {
-        noRange: true,
+        isCorner: true,
+        unitChoices: [
+          { value: "px", label: "px", min: 0, max: 50, default: true },
+          { value: "%", label: "%", min: 0, max: 100, digits: 2, step: 1 },
+        ],
       },
       bindable: true,
       responsive: true,
       states: true,
       classes: true,
+      bindingValidation: {
+        markdown: "border-radius",
+        type: "string",
+        cssSupports: "border-radius",
+      },
     },
     rowReorder: {
       label: { en: "Row Reorder" },
