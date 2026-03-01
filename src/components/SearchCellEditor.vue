@@ -83,12 +83,13 @@ export default {
         dropdownStyle() {
             if (!this.cellRect) return { display: 'none' };
             const style = {
-                position: 'fixed',
+                position: 'absolute',
                 left: this.cellRect.left + 'px',
                 zIndex: '9999',
             };
             if (this.dropdownAbove) {
-                style.bottom = (window.innerHeight - this.cellRect.top + 4) + 'px';
+                style.top = (this.cellRect.top - 4) + 'px';
+                style.transform = 'translateY(-100%)';
             } else {
                 style.top = (this.cellRect.bottom + 4) + 'px';
             }
@@ -110,16 +111,19 @@ export default {
             this.$refs.input?.focus();
             this.$refs.input?.select();
 
-            // Get cell position for dropdown positioning
+            // Get cell position for dropdown positioning (body-relative coords)
             const cell = this.$el.closest('.ag-cell');
             if (cell) {
-                const rect = cell.getBoundingClientRect();
-                this.cellRect = { top: rect.top, bottom: rect.bottom, left: rect.left };
-            }
+                const cellRect = cell.getBoundingClientRect();
+                const bodyRect = document.body.getBoundingClientRect();
+                this.cellRect = {
+                    top: cellRect.top - bodyRect.top,
+                    bottom: cellRect.bottom - bodyRect.top,
+                    left: cellRect.left - bodyRect.left,
+                };
 
-            // Flip dropdown above if not enough space below in viewport
-            if (this.cellRect) {
-                const spaceBelow = window.innerHeight - this.cellRect.bottom;
+                // Flip dropdown above if not enough space below in viewport
+                const spaceBelow = window.innerHeight - cellRect.bottom;
                 if (spaceBelow < 300) {
                     this.dropdownAbove = true;
                 }
