@@ -148,14 +148,29 @@ export default {
     const resizeHandler = ref(null);
     const isInternalResize = ref(false);
     const lastExternalHeight = ref(0);
-    const hasHorizontalScrollbar = ref(false);
-    const actualRowHeight = ref(0);
-    const actualHeaderHeight = ref(0);
+    const measuredNaturalHeight = ref(null);
 
-    const checkHorizontalScrollbar = () => {
-      if (!gridApi.value) return;
-      const el = gridRoot.value?.querySelector('.ag-body-viewport');
-      hasHorizontalScrollbar.value = el ? el.scrollWidth > el.clientWidth : false;
+    const measureGridHeight = () => {
+      const root = gridRoot.value;
+      if (!root || !gridApi.value) return;
+
+      const header = root.querySelector('.ag-header');
+      const bodyViewport = root.querySelector('.ag-body-viewport');
+      const hScroll = root.querySelector('.ag-body-horizontal-scroll');
+      const pagination = root.querySelector('.ag-paging-panel');
+      const wrapper = root.querySelector('.ag-root-wrapper');
+
+      if (!header || !bodyViewport) return;
+
+      const headerH = header.offsetHeight;
+      const rowsH = bodyViewport.scrollHeight;
+      const hScrollH = hScroll?.offsetHeight || 0;
+      const paginationH = pagination?.offsetHeight || 0;
+      const wrapperBorder = wrapper
+        ? (wrapper.offsetHeight - wrapper.clientHeight)
+        : 0;
+
+      measuredNaturalHeight.value = headerH + rowsH + hScrollH + paginationH + wrapperBorder;
     };
 
     // Column overrides: shallow ref holding a deep copy of the initial overrides.
@@ -422,11 +437,11 @@ export default {
     const onColumnResized = (event) => {
       if (!event.finished || event.source !== "uiColumnResized") return;
       debouncedEmitColumnState("resized");
-      checkHorizontalScrollbar();
+      measureGridHeight();
     };
 
     const onGridSizeChanged = () => {
-      checkHorizontalScrollbar();
+      measureGridHeight();
     };
 
     // Helper to apply column overrides from external state
@@ -526,10 +541,6 @@ export default {
       const columns = params.api.getAllGridColumns();
       setColumnOrder(columns.map((col) => col.getColId()));
 
-      const sizes = params.api.getSizesForCurrentTheme();
-      actualRowHeight.value = sizes.rowHeight;
-      actualHeaderHeight.value = sizes.headerHeight;
-
       // Enable column state emission now that grid is ready.
       columnStateReady.value = true;
 
@@ -575,8 +586,8 @@ export default {
         }, BINDING_TIMEOUT_MS);
       }
 
-      nextTick(checkHorizontalScrollbar);
-      setTimeout(checkHorizontalScrollbar, 200);
+      nextTick(() => requestAnimationFrame(measureGridHeight));
+      setTimeout(measureGridHeight, 200);
 
       // With suppressCellFocus, AG Grid won't auto-close editors when clicking
       // another cell. Use mousedown (fires before AG Grid's click handling) to
@@ -604,22 +615,6 @@ export default {
       { flush: 'post' }
     );
 
-    // Re-read actual grid sizes when theme-related props change
-    watch(
-      () => [
-        props.content?.rowHeight,
-        props.content?.headerHeight,
-        props.content?.rowVerticalPaddingScale,
-      ],
-      () => {
-        if (!gridApi.value) return;
-        nextTick(() => {
-          const sizes = gridApi.value.getSizesForCurrentTheme();
-          actualRowHeight.value = sizes.rowHeight;
-          actualHeaderHeight.value = sizes.headerHeight;
-        });
-      }
-    );
 
     let initialFilter = "";
     let initialSort = "";
@@ -934,12 +929,10 @@ export default {
       resizeHandler,
       isInternalResize,
       lastExternalHeight,
-      hasHorizontalScrollbar,
-      checkHorizontalScrollbar,
+      measuredNaturalHeight,
+      measureGridHeight,
       onGridSizeChanged,
       gridRoot,
-      actualRowHeight,
-      actualHeaderHeight,
       /* wwEditor:start */
       createElement,
       rawContent: inject("componentRawContent", {}),
@@ -1337,11 +1330,18 @@ export default {
     fillContainerHeight() {
       if (this.content?.layout !== "fill") return null;
 
-      const rowHeight = this.actualRowHeight || this.content?.rowHeight || 42;
       const rowCount = this.workingRowCount;
-      const hHeight = this.actualHeaderHeight || this.headerHeight || 47;
-      const paginationHeight = this.content?.pagination ? 48 : 0;
-      const scrollbarHeight = this.hasHorizontalScrollbar ? 17 : 0;
+
+      // Use DOM measurement when available, formula as fallback for initial render
+      let naturalHeight;
+      if (this.measuredNaturalHeight) {
+        naturalHeight = this.measuredNaturalHeight;
+      } else {
+        const rowHeight = this.content?.rowHeight || 42;
+        const hHeight = this.headerHeight || 47;
+        const paginationHeight = this.content?.pagination ? 48 : 0;
+        naturalHeight = rowCount * rowHeight + hHeight + paginationHeight + 2;
+      }
 
       let footerHeight = 0;
       const footerValue = this.content?.footerHeight;
@@ -1352,13 +1352,9 @@ export default {
             : parseInt(footerValue, 10) || 0;
       }
 
-      const naturalHeight =
-        rowCount * rowHeight +
-        hHeight +
-        paginationHeight +
-        scrollbarHeight +
-        2;
-      const minHeight = hHeight + rowHeight + scrollbarHeight + 2;
+      const minRowHeight = this.content?.rowHeight || 42;
+      const minHeaderHeight = this.headerHeight || 47;
+      const minHeight = minHeaderHeight + minRowHeight + 2;
 
       const availableContainerHeight =
         (this.containerHeight || naturalHeight) - footerHeight;
@@ -1565,7 +1561,7 @@ export default {
           this.containerHeight = newHeight;
           this.initialContainerHeight = newHeight;
           this.lastExternalHeight = newHeight;
-          this.checkHorizontalScrollbar();
+          this.measureGridHeight();
         };
         frontWindow?.addEventListener("resize", this.resizeHandler);
         return;
@@ -1605,7 +1601,7 @@ export default {
             this.containerHeight = settledHeight;
             this.initialContainerHeight = settledHeight;
           }
-          this.checkHorizontalScrollbar();
+          this.measureGridHeight();
         }, 100);
       });
 
@@ -1878,7 +1874,7 @@ export default {
           this.$nextTick(() => {
             setTimeout(() => {
               this.isInternalResize = false;
-              this.checkHorizontalScrollbar();
+              this.measureGridHeight();
             }, 50);
           });
         }
