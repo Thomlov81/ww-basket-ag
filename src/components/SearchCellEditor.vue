@@ -84,14 +84,13 @@ export default {
             if (!this.cellRect) return { display: 'none' };
             const style = {
                 position: 'fixed',
-                left: this.cellRect.left + 'px',
-                width: this.cellRect.width + 'px',
+                right: (window.innerWidth - this.cellRect.right) + 'px',
                 zIndex: '9999',
             };
             if (this.dropdownAbove) {
-                style.bottom = (window.innerHeight - this.cellRect.top) + 'px';
+                style.bottom = (window.innerHeight - this.cellRect.top + 4) + 'px';
             } else {
-                style.top = this.cellRect.bottom + 'px';
+                style.top = (this.cellRect.bottom + 4) + 'px';
             }
             return style;
         },
@@ -115,7 +114,7 @@ export default {
             const cell = this.$el.closest('.ag-cell');
             if (cell) {
                 const rect = cell.getBoundingClientRect();
-                this.cellRect = { top: rect.top, bottom: rect.bottom, left: rect.left, width: rect.width };
+                this.cellRect = { top: rect.top, bottom: rect.bottom, right: rect.right };
             }
 
             // Flip dropdown above if not enough space below in viewport
