@@ -84,7 +84,7 @@ export default {
             if (!this.cellRect) return { display: 'none' };
             const style = {
                 position: 'fixed',
-                right: (window.innerWidth - this.cellRect.right) + 'px',
+                left: this.cellRect.left + 'px',
                 zIndex: '9999',
             };
             if (this.dropdownAbove) {
@@ -114,7 +114,7 @@ export default {
             const cell = this.$el.closest('.ag-cell');
             if (cell) {
                 const rect = cell.getBoundingClientRect();
-                this.cellRect = { top: rect.top, bottom: rect.bottom, right: rect.right };
+                this.cellRect = { top: rect.top, bottom: rect.bottom, left: rect.left };
             }
 
             // Flip dropdown above if not enough space below in viewport
