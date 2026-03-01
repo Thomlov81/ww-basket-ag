@@ -94,7 +94,6 @@ export default {
                 style.transform = 'translateY(-100%)';
             } else {
                 style.top = (this.cellRect.bottom + 4) + 'px';
-                style.transform = 'translateY(100%)';
             }
             return style;
         },
@@ -135,6 +134,30 @@ export default {
                     this.dropdownAbove = true;
                 }
             }
+
+            // DEBUG: inspect dropdown DOM to find what causes upward growth
+            this.$nextTick(() => {
+                const dd = this.$refs.dropdown;
+                if (dd) {
+                    const ddRect = dd.getBoundingClientRect();
+                    console.log('[DD] wrapper rect:', JSON.stringify({t: Math.round(ddRect.top), l: Math.round(ddRect.left), w: Math.round(ddRect.width), h: Math.round(ddRect.height)}));
+                    console.log('[DD] wrapper offsetHeight:', dd.offsetHeight, 'scrollHeight:', dd.scrollHeight);
+                    const walk = (el, depth) => {
+                        if (depth > 4) return;
+                        const cs = window.getComputedStyle(el);
+                        const r = el.getBoundingClientRect();
+                        if (r.height > 0 || cs.position !== 'static') {
+                            console.log('[DD]' + '  '.repeat(depth),
+                                el.tagName, (el.className?.substring?.(0, 60) || ''),
+                                'pos:' + cs.position,
+                                'top:' + cs.top, 'bottom:' + cs.bottom,
+                                'rect:' + JSON.stringify({t: Math.round(r.top), h: Math.round(r.height)}));
+                        }
+                        for (const child of el.children) walk(child, depth + 1);
+                    };
+                    walk(dd, 0);
+                }
+            });
         });
 
         this.params.onSearchEditingStarted?.({
