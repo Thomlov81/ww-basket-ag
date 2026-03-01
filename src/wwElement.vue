@@ -1,5 +1,5 @@
 <template>
-  <div class="ww-datagrid" :class="gridClasses" :style="wrapperStyle">
+  <div class="ww-datagrid" ref="gridRoot" :class="gridClasses" :style="wrapperStyle">
     <ag-grid-vue
       :rowData="rowData"
       :columnDefs="columnDefs"
@@ -39,7 +39,6 @@
       @cell-editing-stopped="onCellEditingStopped"
       @filter-changed="onFilterChanged"
       @sort-changed="onSortChanged"
-      @cell-clicked="onCellClicked"
       @row-clicked="onRowClicked"
       @row-drag-end="onRowDragged"
       @row-drag-enter="onRowDragEnter"
@@ -139,6 +138,7 @@ export default {
     });
 
     const gridApi = shallowRef(null);
+    const gridRoot = ref(null);
 
     // Fill container mode refs
     const containerHeight = ref(0);
@@ -152,8 +152,7 @@ export default {
 
     const checkHorizontalScrollbar = () => {
       if (!gridApi.value) return;
-      const el = gridApi.value.getGridElement?.()?.querySelector('.ag-body-viewport')
-        || document.querySelector('.ag-body-viewport');
+      const el = gridRoot.value?.querySelector('.ag-body-viewport');
       hasHorizontalScrollbar.value = el ? el.scrollWidth > el.clientWidth : false;
     };
 
@@ -571,6 +570,20 @@ export default {
       }
 
       nextTick(checkHorizontalScrollbar);
+
+      // With suppressCellFocus, AG Grid won't auto-close editors when clicking
+      // another cell. Use mousedown (fires before AG Grid's click handling) to
+      // close any open editor when clicking outside the editing cell.
+      const gridRootEl = params.api.getGridElement?.();
+      if (gridRootEl) {
+        gridRootEl.addEventListener('mousedown', (e) => {
+          const editingCells = gridApi.value?.getEditingCells();
+          if (!editingCells?.length) return;
+          const editingEl = gridRootEl.querySelector('.ag-cell-inline-editing');
+          if (editingEl && editingEl.contains(e.target)) return;
+          gridApi.value.stopEditing();
+        });
+      }
     };
 
     // Watch for breakpoint changes and apply column state smoothly
@@ -900,6 +913,7 @@ export default {
       hasHorizontalScrollbar,
       checkHorizontalScrollbar,
       onGridSizeChanged,
+      gridRoot,
       /* wwEditor:start */
       createElement,
       rawContent: inject("componentRawContent", {}),
@@ -1655,19 +1669,6 @@ export default {
           this.gridApi?.clearFocusedCell();
         }
       }, 0);
-    },
-    onCellClicked(event) {
-      const editingCells = this.gridApi?.getEditingCells();
-      if (editingCells?.length) {
-        const isClickOnEditingCell = editingCells.some(
-          (cell) =>
-            cell.rowIndex === event.rowIndex &&
-            cell.column.getColId() === event.column.getColId()
-        );
-        if (!isClickOnEditingCell) {
-          this.gridApi.stopEditing();
-        }
-      }
     },
     onRowClicked(event) {
       this.$emit("trigger-event", {
