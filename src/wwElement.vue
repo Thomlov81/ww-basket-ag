@@ -164,7 +164,8 @@ export default {
       if (!header || !bodyViewport) return;
 
       const headerH = header.offsetHeight;
-      const rowsH = bodyViewport.scrollHeight;
+      const centerCols = root.querySelector('.ag-center-cols-container');
+      const rowsH = centerCols?.offsetHeight || bodyViewport.scrollHeight;
       const hScrollH = hScroll?.offsetHeight || 0;
       const paginationH = pagination?.offsetHeight || 0;
       const wrapperBorder = wrapper
