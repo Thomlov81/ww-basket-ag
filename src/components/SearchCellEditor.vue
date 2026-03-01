@@ -14,7 +14,7 @@
             :style="iconStyle"
             v-html="iconHtml"
         ></div>
-        <Teleport to="body">
+        <Teleport :to="teleportTarget" :disabled="!teleportTarget">
             <div
                 ref="dropdown"
                 class="search-editor-dropdown ag-custom-component-popup"
@@ -62,6 +62,7 @@ export default {
             iconHtml: DEFAULT_SEARCH_ICON,
             dropdownAbove: false,
             cellRect: null,
+            teleportTarget: null,
         };
     },
     computed: {
@@ -87,10 +88,6 @@ export default {
                 position: 'absolute',
                 left: this.cellRect.left + 'px',
                 zIndex: '9999',
-                border: '3px solid red',
-                backgroundColor: 'rgba(255,0,0,0.1)',
-                minWidth: '50px',
-                minHeight: '50px',
             };
             if (this.dropdownAbove) {
                 style.top = (this.cellRect.top - 4) + 'px';
@@ -116,51 +113,27 @@ export default {
             this.$refs.input?.focus();
             this.$refs.input?.select();
 
-            // Get cell position for dropdown positioning (body-relative coords)
             const cell = this.$el.closest('.ag-cell');
             if (cell) {
-                const cellRect = cell.getBoundingClientRect();
-                const bodyRect = document.body.getBoundingClientRect();
-                this.cellRect = {
-                    top: cellRect.top - bodyRect.top,
-                    bottom: cellRect.bottom - bodyRect.top,
-                    left: cellRect.left - bodyRect.left,
-                };
+                // Teleport to .ww-datagrid — outside AG Grid's overflow containers
+                // but inside the Weweb preview area so wwElement renders correctly
+                const gridEl = cell.closest('.ww-datagrid');
+                if (gridEl) {
+                    this.teleportTarget = gridEl;
+                    const gridRect = gridEl.getBoundingClientRect();
+                    const cellRect = cell.getBoundingClientRect();
+                    this.cellRect = {
+                        top: cellRect.top - gridRect.top,
+                        bottom: cellRect.bottom - gridRect.top,
+                        left: cellRect.left - gridRect.left,
+                    };
+                }
 
-                // Flip dropdown above if not enough space below in viewport
-                const spaceBelow = window.innerHeight - cellRect.bottom;
-                if (spaceBelow < 300) {
+                const spaceBelow = window.innerHeight - cell.getBoundingClientRect().bottom;
+                if (spaceBelow < 150) {
                     this.dropdownAbove = true;
                 }
-
-                // DEBUG: log positioning data
-                console.log('[SearchDropdown] cellRect:', JSON.stringify({top: cellRect.top, bottom: cellRect.bottom, left: cellRect.left, right: cellRect.right}));
-                console.log('[SearchDropdown] bodyRect:', JSON.stringify({top: bodyRect.top, left: bodyRect.left}));
-                console.log('[SearchDropdown] computed cellRect:', JSON.stringify(this.cellRect));
-                console.log('[SearchDropdown] spaceBelow:', spaceBelow, 'dropdownAbove:', this.dropdownAbove);
-                console.log('[SearchDropdown] window.innerHeight:', window.innerHeight);
-                let el = cell; const transforms = [];
-                while (el && el !== document.documentElement) {
-                    const t = window.getComputedStyle(el).transform;
-                    if (t && t !== 'none') transforms.push({tag: el.tagName, class: (el.className?.substring?.(0, 50) || ''), transform: t});
-                    el = el.parentElement;
-                }
-                console.log('[SearchDropdown] ancestor transforms:', JSON.stringify(transforms));
             }
-
-            // Diagnostic: check actual DOM state of the teleported dropdown
-            this.$nextTick(() => {
-                const dd = this.$refs.dropdown;
-                if (dd) {
-                    console.log('[DD-Diag] parentElement:', dd.parentElement?.tagName, dd.parentElement?.className?.substring(0, 80));
-                    console.log('[DD-Diag] style.cssText:', dd.style.cssText);
-                    console.log('[DD-Diag] getBoundingClientRect:', JSON.stringify(dd.getBoundingClientRect()));
-                    console.log('[DD-Diag] offsetParent:', dd.offsetParent?.tagName, dd.offsetParent?.className?.substring(0, 80));
-                    console.log('[DD-Diag] children:', dd.children.length, 'innerHTML length:', dd.innerHTML.length);
-                } else {
-                    console.log('[DD-Diag] dropdown ref is NULL');
-                }
-            });
         });
 
         this.params.onSearchEditingStarted?.({
