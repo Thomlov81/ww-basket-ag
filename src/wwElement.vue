@@ -611,6 +611,7 @@ export default {
           if (!editingCells?.length) return;
           const editingEl = gridRootEl.querySelector('.ag-cell-inline-editing');
           if (editingEl && editingEl.contains(e.target)) return;
+          if (e.target.closest('.ag-custom-component-popup')) return;
           gridApi.value.stopEditing();
         });
       }
