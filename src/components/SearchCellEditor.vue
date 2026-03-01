@@ -130,7 +130,7 @@ export default {
                 }
 
                 const spaceBelow = window.innerHeight - cell.getBoundingClientRect().bottom;
-                if (spaceBelow < 150) {
+                if (spaceBelow < 350) {
                     this.dropdownAbove = true;
                 }
             }
@@ -184,11 +184,17 @@ export default {
     border-radius: var(--ag-border-radius, 4px);
     box-sizing: border-box;
 }
+.search-editor-dropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
 :deep(.search-editor-flexbox) {
     overflow: visible;
-    position: relative !important;
+    position: static !important;
     bottom: auto !important;
     left: auto !important;
+    top: auto !important;
 }
 .search-cell-icon {
     position: absolute;
