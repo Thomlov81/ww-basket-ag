@@ -27,6 +27,7 @@
       ensureDomOrder
       :singleClickEdit="content?.singleClickEdit || false"
       :stopEditingWhenCellsLoseFocus="true"
+      :suppressCellFocus="true"
       :tooltipShowDelay="750"
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="true"
@@ -38,12 +39,14 @@
       @cell-editing-stopped="onCellEditingStopped"
       @filter-changed="onFilterChanged"
       @sort-changed="onSortChanged"
+      @cell-clicked="onCellClicked"
       @row-clicked="onRowClicked"
       @row-drag-end="onRowDragged"
       @row-drag-enter="onRowDragEnter"
       @column-moved="onColumnMoved"
       @column-resized="onColumnResized"
       @pagination-changed="onPaginationChanged"
+      @grid-size-changed="onGridSizeChanged"
     >
     </ag-grid-vue>
     <button
@@ -145,6 +148,14 @@ export default {
     const resizeHandler = ref(null);
     const isInternalResize = ref(false);
     const lastExternalHeight = ref(0);
+    const hasHorizontalScrollbar = ref(false);
+
+    const checkHorizontalScrollbar = () => {
+      if (!gridApi.value) return;
+      const el = gridApi.value.getGridElement?.()?.querySelector('.ag-body-viewport')
+        || document.querySelector('.ag-body-viewport');
+      hasHorizontalScrollbar.value = el ? el.scrollWidth > el.clientWidth : false;
+    };
 
     // Column overrides: shallow ref holding a deep copy of the initial overrides.
     // Using shallowRef so that in-place mutations do NOT trigger columnDefs re-evaluation.
@@ -410,6 +421,11 @@ export default {
     const onColumnResized = (event) => {
       if (!event.finished || event.source !== "uiColumnResized") return;
       debouncedEmitColumnState("resized");
+      checkHorizontalScrollbar();
+    };
+
+    const onGridSizeChanged = () => {
+      checkHorizontalScrollbar();
     };
 
     // Helper to apply column overrides from external state
@@ -553,6 +569,8 @@ export default {
           }
         }, BINDING_TIMEOUT_MS);
       }
+
+      nextTick(checkHorizontalScrollbar);
     };
 
     // Watch for breakpoint changes and apply column state smoothly
@@ -879,6 +897,9 @@ export default {
       resizeHandler,
       isInternalResize,
       lastExternalHeight,
+      hasHorizontalScrollbar,
+      checkHorizontalScrollbar,
+      onGridSizeChanged,
       /* wwEditor:start */
       createElement,
       rawContent: inject("componentRawContent", {}),
@@ -1280,7 +1301,7 @@ export default {
       const rowCount = this.workingRowCount;
       const hHeight = this.headerHeight || 47;
       const paginationHeight = this.content?.pagination ? 48 : 0;
-      const scrollbarHeight = 17;
+      const scrollbarHeight = this.hasHorizontalScrollbar ? 17 : 0;
 
       let footerHeight = 0;
       const footerValue = this.content?.footerHeight;
@@ -1504,6 +1525,7 @@ export default {
           this.containerHeight = newHeight;
           this.initialContainerHeight = newHeight;
           this.lastExternalHeight = newHeight;
+          this.checkHorizontalScrollbar();
         };
         frontWindow?.addEventListener("resize", this.resizeHandler);
         return;
@@ -1543,6 +1565,7 @@ export default {
             this.containerHeight = settledHeight;
             this.initialContainerHeight = settledHeight;
           }
+          this.checkHorizontalScrollbar();
         }, 100);
       });
 
@@ -1632,6 +1655,19 @@ export default {
           this.gridApi?.clearFocusedCell();
         }
       }, 0);
+    },
+    onCellClicked(event) {
+      const editingCells = this.gridApi?.getEditingCells();
+      if (editingCells?.length) {
+        const isClickOnEditingCell = editingCells.some(
+          (cell) =>
+            cell.rowIndex === event.rowIndex &&
+            cell.column.getColId() === event.column.getColId()
+        );
+        if (!isClickOnEditingCell) {
+          this.gridApi.stopEditing();
+        }
+      }
     },
     onRowClicked(event) {
       this.$emit("trigger-event", {
@@ -1952,18 +1988,6 @@ export default {
     border-style: var(--ww-cell-editing-border-style, solid) !important;
   }
 
-  // Prevent AG Grid's focus border from overriding column/row borders on non-editing cells
-  // Uses 1px transparent (not none) to match the reserved border-width on all .ag-cell,
-  // preventing any layout shift when focus is applied.
-  :deep(.ag-cell-focus:not(.ag-cell-inline-editing):focus-within) {
-    border-right: var(--ag-cell-horizontal-border) !important;
-    border-bottom: var(--ag-row-border) !important;
-    border-top: 1px solid transparent !important;
-    border-left: 1px solid transparent !important;
-    outline: none !important;
-    box-shadow: none !important;
-  }
-
   // Allow search cell content to overflow (for floating dropdowns)
   :deep(.ag-cell-search) {
     overflow: visible !important;
@@ -2036,8 +2060,6 @@ export default {
     border-bottom: none !important;
   }
   :deep(.ag-cell) {
-    border-top: 1px solid transparent;
-    border-left: 1px solid transparent;
     border-bottom: var(--ag-row-border);
   }
 
