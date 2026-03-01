@@ -18,6 +18,7 @@
             <div
                 ref="dropdown"
                 class="search-editor-dropdown ag-custom-component-popup"
+                :class="{ 'dropdown-below': !dropdownAbove }"
                 :style="dropdownStyle"
                 @mousedown.prevent
             >
@@ -134,29 +135,6 @@ export default {
                     this.dropdownAbove = true;
                 }
             }
-
-            // DEBUG: unfiltered DOM inspection with delay for Weweb async rendering
-            setTimeout(() => {
-                const dd = this.$refs.dropdown;
-                if (dd) {
-                    console.log('[DD] innerHTML:', dd.innerHTML.substring(0, 500));
-                    const walk = (el, depth) => {
-                        if (depth > 6) return;
-                        const cs = window.getComputedStyle(el);
-                        const r = el.getBoundingClientRect();
-                        console.log('[DD]' + '  '.repeat(depth),
-                            el.tagName,
-                            (el.className?.substring?.(0, 40) || ''),
-                            'pos:' + cs.position,
-                            'overflow:' + cs.overflow,
-                            'w:' + Math.round(r.width),
-                            'h:' + Math.round(r.height),
-                            't:' + Math.round(r.top));
-                        for (const child of el.children) walk(child, depth + 1);
-                    };
-                    walk(dd, 0);
-                }
-            }, 200);
         });
 
         this.params.onSearchEditingStarted?.({
@@ -209,6 +187,10 @@ export default {
 }
 :deep(.search-editor-flexbox) {
     overflow: visible;
+}
+.search-editor-dropdown.dropdown-below :deep(.search-editor-flexbox) {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
 }
 .search-cell-icon {
     position: absolute;
