@@ -53,10 +53,11 @@ export default {
     min-height: 0;
 }
 .info-cell-value {
-    flex-shrink: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding-top: 2px;
 }
 </style>
