@@ -149,6 +149,8 @@ export default {
     const isInternalResize = ref(false);
     const lastExternalHeight = ref(0);
     const hasHorizontalScrollbar = ref(false);
+    const actualRowHeight = ref(0);
+    const actualHeaderHeight = ref(0);
 
     const checkHorizontalScrollbar = () => {
       if (!gridApi.value) return;
@@ -524,6 +526,10 @@ export default {
       const columns = params.api.getAllGridColumns();
       setColumnOrder(columns.map((col) => col.getColId()));
 
+      const sizes = params.api.getSizesForCurrentTheme();
+      actualRowHeight.value = sizes.rowHeight;
+      actualHeaderHeight.value = sizes.headerHeight;
+
       // Enable column state emission now that grid is ready.
       columnStateReady.value = true;
 
@@ -570,11 +576,12 @@ export default {
       }
 
       nextTick(checkHorizontalScrollbar);
+      setTimeout(checkHorizontalScrollbar, 200);
 
       // With suppressCellFocus, AG Grid won't auto-close editors when clicking
       // another cell. Use mousedown (fires before AG Grid's click handling) to
       // close any open editor when clicking outside the editing cell.
-      const gridRootEl = params.api.getGridElement?.();
+      const gridRootEl = gridRoot.value;
       if (gridRootEl) {
         gridRootEl.addEventListener('mousedown', (e) => {
           const editingCells = gridApi.value?.getEditingCells();
@@ -595,6 +602,23 @@ export default {
         gridApi.value.applyColumnState({ state: columnState, applyOrder: true });
       },
       { flush: 'post' }
+    );
+
+    // Re-read actual grid sizes when theme-related props change
+    watch(
+      () => [
+        props.content?.rowHeight,
+        props.content?.headerHeight,
+        props.content?.rowVerticalPaddingScale,
+      ],
+      () => {
+        if (!gridApi.value) return;
+        nextTick(() => {
+          const sizes = gridApi.value.getSizesForCurrentTheme();
+          actualRowHeight.value = sizes.rowHeight;
+          actualHeaderHeight.value = sizes.headerHeight;
+        });
+      }
     );
 
     let initialFilter = "";
@@ -914,6 +938,8 @@ export default {
       checkHorizontalScrollbar,
       onGridSizeChanged,
       gridRoot,
+      actualRowHeight,
+      actualHeaderHeight,
       /* wwEditor:start */
       createElement,
       rawContent: inject("componentRawContent", {}),
@@ -1311,9 +1337,9 @@ export default {
     fillContainerHeight() {
       if (this.content?.layout !== "fill") return null;
 
-      const rowHeight = this.content?.rowHeight || 42;
+      const rowHeight = this.actualRowHeight || this.content?.rowHeight || 42;
       const rowCount = this.workingRowCount;
-      const hHeight = this.headerHeight || 47;
+      const hHeight = this.actualHeaderHeight || this.headerHeight || 47;
       const paginationHeight = this.content?.pagination ? 48 : 0;
       const scrollbarHeight = this.hasHorizontalScrollbar ? 17 : 0;
 
@@ -1852,6 +1878,7 @@ export default {
           this.$nextTick(() => {
             setTimeout(() => {
               this.isInternalResize = false;
+              this.checkHorizontalScrollbar();
             }, 50);
           });
         }
