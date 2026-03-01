@@ -1,5 +1,5 @@
 <template>
-    <div class="search-cell-editor-wrapper" :class="dropdownAbove ? 'dropdown-above' : 'dropdown-below'">
+    <div class="search-cell-editor-wrapper">
         <input
             ref="input"
             class="search-cell-editor"
@@ -14,19 +14,27 @@
             :style="iconStyle"
             v-html="iconHtml"
         ></div>
-        <wwLayoutItemContext
-            is-repeat
-            :index="params.node.sourceRowIndex"
-            :data="{
-                value: params.value,
-                row: params.data,
-                searchOpen: true,
-                searchText: searchText,
-                searchEditingCell: searchState.editingCell,
-            }"
-        >
-            <wwElement v-bind="params.containerId" class="search-editor-flexbox ag-custom-component-popup"></wwElement>
-        </wwLayoutItemContext>
+        <Teleport to="body">
+            <div
+                class="search-editor-dropdown ag-custom-component-popup"
+                :style="dropdownStyle"
+                @mousedown.prevent
+            >
+                <wwLayoutItemContext
+                    is-repeat
+                    :index="params.node.sourceRowIndex"
+                    :data="{
+                        value: params.value,
+                        row: params.data,
+                        searchOpen: true,
+                        searchText: searchText,
+                        searchEditingCell: searchState.editingCell,
+                    }"
+                >
+                    <wwElement v-bind="params.containerId" class="search-editor-flexbox ag-custom-component-popup"></wwElement>
+                </wwLayoutItemContext>
+            </div>
+        </Teleport>
     </div>
 </template>
 
@@ -52,6 +60,7 @@ export default {
             searchText: this.params?.value ?? "",
             iconHtml: DEFAULT_SEARCH_ICON,
             dropdownAbove: false,
+            cellRect: null,
         };
     },
     computed: {
@@ -71,6 +80,21 @@ export default {
                 paddingRight: (paddingRight + 16) + "px",
             };
         },
+        dropdownStyle() {
+            if (!this.cellRect) return { display: 'none' };
+            const style = {
+                position: 'fixed',
+                left: this.cellRect.left + 'px',
+                width: this.cellRect.width + 'px',
+                zIndex: '9999',
+            };
+            if (this.dropdownAbove) {
+                style.bottom = (window.innerHeight - this.cellRect.top) + 'px';
+            } else {
+                style.top = this.cellRect.bottom + 'px';
+            }
+            return style;
+        },
     },
     async beforeMount() {
         const getIcon = this.params?.getIcon;
@@ -87,16 +111,21 @@ export default {
             this.$refs.input?.focus();
             this.$refs.input?.select();
 
+            // Get cell position for dropdown positioning
+            const cell = this.$el.closest('.ag-cell');
+            if (cell) {
+                const rect = cell.getBoundingClientRect();
+                this.cellRect = { top: rect.top, bottom: rect.bottom, left: rect.left, width: rect.width };
+            }
+
             // Flip dropdown above if not enough space below in viewport
-            const rect = this.$el.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            if (spaceBelow < 300) {
-                this.dropdownAbove = true;
+            if (this.cellRect) {
+                const spaceBelow = window.innerHeight - this.cellRect.bottom;
+                if (spaceBelow < 300) {
+                    this.dropdownAbove = true;
+                }
             }
         });
-
-        // Mark the AG Grid popup wrapper so we can style it transparently
-        this.$el.closest('.ag-popup-editor')?.classList.add('search-popup-editor');
 
         this.params.onSearchEditingStarted?.({
             rowIndex: this.params.node.sourceRowIndex,
@@ -117,10 +146,7 @@ export default {
             return this.params.value;
         },
         isPopup() {
-            return true;
-        },
-        getPopupPosition() {
-            return 'under';
+            return false;
         },
         isCancelAfterEnd() {
             return true;
@@ -150,16 +176,7 @@ export default {
     box-sizing: border-box;
 }
 :deep(.search-editor-flexbox) {
-    position: absolute;
-    left: 0;
-    width: 100%;
     overflow: visible;
-}
-.dropdown-below :deep(.search-editor-flexbox) {
-    top: 100%;
-}
-.dropdown-above :deep(.search-editor-flexbox) {
-    bottom: 100%;
 }
 .search-cell-icon {
     position: absolute;

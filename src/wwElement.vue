@@ -1201,8 +1201,6 @@ export default {
                 getIcon: this.getIcon,
               },
               editable: true,
-              cellEditorPopup: true,
-              cellEditorPopupPosition: 'under',
               sortable: col?.sortable,
               filter: col?.filter,
               singleClickEdit: true,
@@ -1991,7 +1989,6 @@ export default {
 <style scoped lang="scss">
 .ww-datagrid {
   position: relative;
-  overflow: visible;
   :deep(.ag-root-wrapper) {
     border-radius: var(--ww-data-grid_wrapper-borderRadius) !important;
   }
@@ -2074,14 +2071,6 @@ export default {
     border-color: var(--ww-cell-editing-border-color) !important;
     border-width: var(--ww-cell-editing-border-width, 2px) !important;
     border-style: var(--ww-cell-editing-border-style, solid) !important;
-  }
-
-  // Style the popup editor wrapper for search cells transparently
-  :deep(.search-popup-editor) {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
   }
 
   // Reserve space in the header for the settings icon
