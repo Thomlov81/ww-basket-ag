@@ -93,6 +93,7 @@ import WewebCellRenderer from "./components/WewebCellRenderer.vue";
 import DragCellRenderer from "./components/DragCellRenderer.vue";
 import SearchCellRenderer from "./components/SearchCellRenderer.vue";
 import SearchCellEditor from "./components/SearchCellEditor.vue";
+import InfoCellRenderer from "./components/InfoCellRenderer.vue";
 
 // TODO: maybe register less modules
 // TODO: maybe register modules per grid instead of globally
@@ -107,6 +108,7 @@ export default {
     DragCellRenderer,
     SearchCellRenderer,
     SearchCellEditor,
+    InfoCellRenderer,
   },
   props: {
     content: {
@@ -1216,6 +1218,32 @@ export default {
               },
             };
           }
+          case "info": {
+            const infoResult = {
+              ...commonProperties,
+              headerName: effectiveHeaderName,
+              field: col?.field,
+              cellRenderer: "InfoCellRenderer",
+              cellRendererParams: {
+                containerId: col?.containerId,
+              },
+              sortable: col?.sortable,
+              filter: col?.filter,
+              editable:
+                col?.editable && col?.useEditableFormula && col?.editableFormula
+                  ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
+                  : !!col?.editable,
+            };
+            if (col?.useCustomLabel) {
+              infoResult.valueFormatter = (params) => {
+                return this.resolveMappingFormula(
+                  col?.displayLabelFormula,
+                  params.data
+                );
+              };
+            }
+            return infoResult;
+          }
           default: {
             const result = {
               ...commonProperties,
@@ -1939,7 +1967,7 @@ export default {
 
         // We assume there will only be one custom column each time
         const columnIndex = (this.rawContent.columns || []).findIndex(
-          (col) => (col?.cellDataType === "custom" || col?.cellDataType === "search") && !col?.containerId
+          (col) => (col?.cellDataType === "custom" || col?.cellDataType === "search" || col?.cellDataType === "info") && !col?.containerId
         );
         if (columnIndex === -1) return;
         const newColumns = [...this.rawContent.columns];

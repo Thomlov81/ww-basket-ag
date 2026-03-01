@@ -1566,6 +1566,7 @@ export default {
                     { value: "action", label: "Action" },
                     { value: "custom", label: "Custom" },
                     { value: "search", label: "Search" },
+                    { value: "info", label: "Info" },
                   ],
                 },
               },
@@ -1586,6 +1587,15 @@ export default {
                 },
                 editorOnly: true,
                 hidden: array?.item?.cellDataType !== "search",
+              },
+              infoInfo: {
+                type: "InfoBox",
+                options: {
+                  variant: "warning",
+                  content: "To select your info cell, use the Layout view",
+                },
+                editorOnly: true,
+                hidden: array?.item?.cellDataType !== "info",
               },
               field: {
                 label: "Key",
@@ -1935,6 +1945,7 @@ export default {
               "cellDataType",
               "info",
               "searchInfo",
+              "infoInfo",
               "actionName",
               "actionLabel",
               "imageWidth",
