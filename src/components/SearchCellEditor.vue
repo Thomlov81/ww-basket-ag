@@ -186,6 +186,9 @@ export default {
 }
 :deep(.search-editor-flexbox) {
     overflow: visible;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
 }
 .search-cell-icon {
     position: absolute;

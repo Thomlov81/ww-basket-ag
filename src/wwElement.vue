@@ -1989,6 +1989,7 @@ export default {
 <style scoped lang="scss">
 .ww-datagrid {
   position: relative;
+  overflow: visible;
   :deep(.ag-root-wrapper) {
     border-radius: var(--ww-data-grid_wrapper-borderRadius) !important;
   }
