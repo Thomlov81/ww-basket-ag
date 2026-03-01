@@ -1227,6 +1227,7 @@ export default {
               cellRendererParams: {
                 containerId: col?.containerId,
               },
+              tooltipValueGetter: null,
               sortable: col?.sortable,
               filter: col?.filter,
               editable:
