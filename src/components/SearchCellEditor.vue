@@ -1,5 +1,5 @@
 <template>
-    <div class="search-cell-editor-wrapper">
+    <div class="search-cell-editor-wrapper" :class="dropdownAbove ? 'dropdown-above' : 'dropdown-below'">
         <input
             ref="input"
             class="search-cell-editor"
@@ -25,7 +25,7 @@
                 searchEditingCell: searchState.editingCell,
             }"
         >
-            <wwElement v-bind="params.containerId" class="search-editor-flexbox"></wwElement>
+            <wwElement v-bind="params.containerId" class="search-editor-flexbox ag-custom-component-popup"></wwElement>
         </wwLayoutItemContext>
     </div>
 </template>
@@ -51,6 +51,7 @@ export default {
         return {
             searchText: this.params?.value ?? "",
             iconHtml: DEFAULT_SEARCH_ICON,
+            dropdownAbove: false,
         };
     },
     computed: {
@@ -85,7 +86,18 @@ export default {
         this.$nextTick(() => {
             this.$refs.input?.focus();
             this.$refs.input?.select();
+
+            // Flip dropdown above if not enough space below in viewport
+            const rect = this.$el.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow < 300) {
+                this.dropdownAbove = true;
+            }
         });
+
+        // Mark the AG Grid popup wrapper so we can style it transparently
+        this.$el.closest('.ag-popup-editor')?.classList.add('search-popup-editor');
+
         this.params.onSearchEditingStarted?.({
             rowIndex: this.params.node.sourceRowIndex,
             rowId: this.params.node.id,
@@ -105,7 +117,10 @@ export default {
             return this.params.value;
         },
         isPopup() {
-            return false;
+            return true;
+        },
+        getPopupPosition() {
+            return 'under';
         },
         isCancelAfterEnd() {
             return true;
@@ -136,9 +151,15 @@ export default {
 }
 :deep(.search-editor-flexbox) {
     position: absolute;
-    bottom: 0;
     left: 0;
+    width: 100%;
     overflow: visible;
+}
+.dropdown-below :deep(.search-editor-flexbox) {
+    top: 100%;
+}
+.dropdown-above :deep(.search-editor-flexbox) {
+    bottom: 100%;
 }
 .search-cell-icon {
     position: absolute;

@@ -6,14 +6,15 @@
                 {{ params.searchPlaceholder }}
             </span>
             <wwLayoutItemContext
+                v-if="!isThisCellEditing"
                 is-repeat
                 :index="params.node.sourceRowIndex"
                 :data="{
                     value: params.value,
                     row: params.data,
-                    searchOpen: isThisCellEditing,
-                    searchText: isThisCellEditing ? searchState.text : '',
-                    searchEditingCell: isThisCellEditing ? searchState.editingCell : null,
+                    searchOpen: false,
+                    searchText: '',
+                    searchEditingCell: null,
                 }"
             >
                 <wwElement v-bind="params.containerId" class="search-cell-flexbox"></wwElement>

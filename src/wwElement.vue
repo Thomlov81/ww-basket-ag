@@ -1201,6 +1201,8 @@ export default {
                 getIcon: this.getIcon,
               },
               editable: true,
+              cellEditorPopup: true,
+              cellEditorPopupPosition: 'under',
               sortable: col?.sortable,
               filter: col?.filter,
               singleClickEdit: true,
@@ -1989,6 +1991,7 @@ export default {
 <style scoped lang="scss">
 .ww-datagrid {
   position: relative;
+  overflow: visible;
   :deep(.ag-root-wrapper) {
     border-radius: var(--ww-data-grid_wrapper-borderRadius) !important;
   }
@@ -2073,15 +2076,12 @@ export default {
     border-style: var(--ww-cell-editing-border-style, solid) !important;
   }
 
-  // Allow search cell content to overflow (for floating dropdowns)
-  :deep(.ag-cell-search) {
-    overflow: visible !important;
-  }
-  :deep(.ag-cell-search .ag-cell-value) {
-    overflow: visible !important;
-  }
-  :deep(.ag-cell-search .ag-cell-edit-wrapper) {
-    overflow: visible !important;
+  // Style the popup editor wrapper for search cells transparently
+  :deep(.search-popup-editor) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
 
   // Reserve space in the header for the settings icon
