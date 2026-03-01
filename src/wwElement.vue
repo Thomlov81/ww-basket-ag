@@ -724,6 +724,10 @@ export default {
         scheduleVariableUpdate();
         // Recalculate height after AG Grid renders new rows
         setTimeout(measureGridHeight, 100);
+        // Force re-evaluation of cellStyle/cellClass for editable styling
+        setTimeout(() => {
+          gridApi.value?.refreshCells({ force: true });
+        }, 150);
       },
       { immediate: true, deep: true }
     );
@@ -1224,6 +1228,22 @@ export default {
                   ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
                   : !!col?.editable,
             };
+            if (col?.field?.includes('.')) {
+              const fieldParts = col.field.split('.');
+              result.valueSetter = (params) => {
+                let obj = params.data;
+                for (let i = 0; i < fieldParts.length - 1; i++) {
+                  if (obj[fieldParts[i]] == null) {
+                    obj[fieldParts[i]] = {};
+                  }
+                  obj = obj[fieldParts[i]];
+                }
+                const lastKey = fieldParts[fieldParts.length - 1];
+                if (obj[lastKey] === params.newValue) return false;
+                obj[lastKey] = params.newValue;
+                return true;
+              };
+            }
             if (col?.cellDataType === "number") {
               result.valueParser = (params) => {
                 const val = Number(String(params.newValue).replace(',', '.'));
