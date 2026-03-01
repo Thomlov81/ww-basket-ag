@@ -149,6 +149,7 @@ export default {
     const isInternalResize = ref(false);
     const lastExternalHeight = ref(0);
     const measuredNaturalHeight = ref(null);
+    let borderCorrection = 0;
 
     const measureGridHeight = () => {
       const root = gridRoot.value;
@@ -170,7 +171,15 @@ export default {
         ? (wrapper.offsetHeight - wrapper.clientHeight)
         : 0;
 
-      measuredNaturalHeight.value = headerH + rowsH + hScrollH + paginationH + wrapperBorder;
+      // After the first DOM measurement is applied, check if the viewport still
+      // overflows. Any small remaining overflow comes from internal borders/padding
+      // not captured by the parts sum. Learn it as a correction.
+      const overflow = bodyViewport.scrollHeight - bodyViewport.clientHeight;
+      if (overflow > 0 && overflow < 20 && measuredNaturalHeight.value !== null) {
+        borderCorrection = overflow;
+      }
+
+      measuredNaturalHeight.value = headerH + rowsH + hScrollH + paginationH + wrapperBorder + borderCorrection;
     };
 
     // Column overrides: shallow ref holding a deep copy of the initial overrides.
