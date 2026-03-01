@@ -127,6 +127,20 @@ export default {
                 if (spaceBelow < 300) {
                     this.dropdownAbove = true;
                 }
+
+                // DEBUG: log positioning data
+                console.log('[SearchDropdown] cellRect:', JSON.stringify({top: cellRect.top, bottom: cellRect.bottom, left: cellRect.left, right: cellRect.right}));
+                console.log('[SearchDropdown] bodyRect:', JSON.stringify({top: bodyRect.top, left: bodyRect.left}));
+                console.log('[SearchDropdown] computed cellRect:', JSON.stringify(this.cellRect));
+                console.log('[SearchDropdown] spaceBelow:', spaceBelow, 'dropdownAbove:', this.dropdownAbove);
+                console.log('[SearchDropdown] window.innerHeight:', window.innerHeight);
+                let el = cell; const transforms = [];
+                while (el && el !== document.documentElement) {
+                    const t = window.getComputedStyle(el).transform;
+                    if (t && t !== 'none') transforms.push({tag: el.tagName, class: (el.className?.substring?.(0, 50) || ''), transform: t});
+                    el = el.parentElement;
+                }
+                console.log('[SearchDropdown] ancestor transforms:', JSON.stringify(transforms));
             }
         });
 
