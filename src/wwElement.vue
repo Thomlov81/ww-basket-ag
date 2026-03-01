@@ -721,8 +721,8 @@ export default {
         dataValue.total = newVal.length;
         setData(dataValue);
         scheduleVariableUpdate();
-        // Recalculate height after grid renders new rows
-        nextTick(() => requestAnimationFrame(measureGridHeight));
+        // Recalculate height after AG Grid renders new rows
+        setTimeout(measureGridHeight, 100);
       },
       { immediate: true, deep: true }
     );
