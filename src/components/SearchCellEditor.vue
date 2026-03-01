@@ -94,6 +94,7 @@ export default {
                 style.transform = 'translateY(-100%)';
             } else {
                 style.top = (this.cellRect.bottom + 4) + 'px';
+                style.transform = 'translateY(100%)';
             }
             return style;
         },
@@ -184,17 +185,8 @@ export default {
     border-radius: var(--ag-border-radius, 4px);
     box-sizing: border-box;
 }
-.search-editor-dropdown {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
 :deep(.search-editor-flexbox) {
     overflow: visible;
-    position: static !important;
-    bottom: auto !important;
-    left: auto !important;
-    top: auto !important;
 }
 .search-cell-icon {
     position: absolute;
