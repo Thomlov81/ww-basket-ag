@@ -16,6 +16,7 @@
         ></div>
         <Teleport to="body">
             <div
+                ref="dropdown"
                 class="search-editor-dropdown ag-custom-component-popup"
                 :style="dropdownStyle"
                 @mousedown.prevent
@@ -86,6 +87,10 @@ export default {
                 position: 'absolute',
                 left: this.cellRect.left + 'px',
                 zIndex: '9999',
+                border: '3px solid red',
+                backgroundColor: 'rgba(255,0,0,0.1)',
+                minWidth: '50px',
+                minHeight: '50px',
             };
             if (this.dropdownAbove) {
                 style.top = (this.cellRect.top - 4) + 'px';
@@ -142,6 +147,20 @@ export default {
                 }
                 console.log('[SearchDropdown] ancestor transforms:', JSON.stringify(transforms));
             }
+
+            // Diagnostic: check actual DOM state of the teleported dropdown
+            this.$nextTick(() => {
+                const dd = this.$refs.dropdown;
+                if (dd) {
+                    console.log('[DD-Diag] parentElement:', dd.parentElement?.tagName, dd.parentElement?.className?.substring(0, 80));
+                    console.log('[DD-Diag] style.cssText:', dd.style.cssText);
+                    console.log('[DD-Diag] getBoundingClientRect:', JSON.stringify(dd.getBoundingClientRect()));
+                    console.log('[DD-Diag] offsetParent:', dd.offsetParent?.tagName, dd.offsetParent?.className?.substring(0, 80));
+                    console.log('[DD-Diag] children:', dd.children.length, 'innerHTML length:', dd.innerHTML.length);
+                } else {
+                    console.log('[DD-Diag] dropdown ref is NULL');
+                }
+            });
         });
 
         this.params.onSearchEditingStarted?.({
