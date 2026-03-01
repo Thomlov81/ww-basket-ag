@@ -9,8 +9,8 @@
                 <wwElement v-bind="params.containerId" class="info-cell-flexbox"></wwElement>
             </wwLayoutItemContext>
         </div>
-        <div class="info-cell-value" :title="displayValue">
-            {{ displayValue }}
+        <div class="info-cell-value">
+            <span class="info-cell-value-text">{{ displayValue }}</span>
         </div>
     </div>
 </template>
@@ -43,7 +43,7 @@ export default {
     overflow: hidden;
 }
 .info-cell-custom {
-    flex: 1;
+    flex: none;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -56,6 +56,10 @@ export default {
     flex: 1;
     display: flex;
     align-items: center;
+    min-height: 0;
+}
+.info-cell-value-text {
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
