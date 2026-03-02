@@ -773,9 +773,9 @@ export default {
     };
 
     const clearDragHighlight = () => {
-      if (dragTargetRowId.value != null && gridRoot.value) {
+      if (gridRoot.value) {
         gridRoot.value
-          .querySelectorAll(`.ag-row[row-id="${CSS.escape(String(dragTargetRowId.value))}"]`)
+          .querySelectorAll(".ag-row-drag-target")
           .forEach((el) => el.classList.remove("ag-row-drag-target"));
       }
       dragTargetRowId.value = null;
@@ -816,20 +816,18 @@ export default {
     };
 
     const onRowDragMove = (event) => {
-      if (!props.content?.treeDataEnabled) return;
-      const overId = event.overNode?.id ?? null;
-      if (overId === dragTargetRowId.value) return;
+      if (!props.content?.treeDataEnabled || !gridRoot.value) return;
+      const overIdx = event.overIndex ?? -1;
+      if (overIdx === dragTargetRowId.value) return;
       // Clear previous highlight
-      if (dragTargetRowId.value != null && gridRoot.value) {
-        gridRoot.value
-          .querySelectorAll(`.ag-row[row-id="${CSS.escape(String(dragTargetRowId.value))}"]`)
-          .forEach((el) => el.classList.remove("ag-row-drag-target"));
-      }
+      gridRoot.value
+        .querySelectorAll(".ag-row-drag-target")
+        .forEach((el) => el.classList.remove("ag-row-drag-target"));
       // Apply new highlight
-      dragTargetRowId.value = overId;
-      if (overId != null && gridRoot.value) {
+      dragTargetRowId.value = overIdx;
+      if (overIdx >= 0) {
         gridRoot.value
-          .querySelectorAll(`.ag-row[row-id="${CSS.escape(String(overId))}"]`)
+          .querySelectorAll(`.ag-row[row-index="${overIdx}"]`)
           .forEach((el) => el.classList.add("ag-row-drag-target"));
       }
     };
@@ -2254,10 +2252,8 @@ export default {
   }
 
   // Row drag drop target indicator (tree mode)
-  :deep(.ag-row-drag-target) {
-    background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 15%, transparent) !important;
-    outline: 1px solid var(--ag-range-selection-border-color, #2196f3);
-    outline-offset: -1px;
+  :deep(.ag-row.ag-row-drag-target) {
+    box-shadow: inset 0 0 0 1px var(--ag-range-selection-border-color, #2196f3) !important;
   }
 
   // Drag handle column
