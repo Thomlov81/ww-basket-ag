@@ -1341,7 +1341,7 @@ export default {
       }
 
       // Handle row reorder with dedicated drag column
-      if (this.content?.rowReorder) {
+      if (this.content?.rowReorder && !this.content?.treeDataEnabled) {
         const iconSizeRaw = this.content?.dragIconSize || "16px";
         const iconSizePx = parseInt(iconSizeRaw, 10) || 16;
         const paddingRaw = this.content?.dragIconPadding || "4px 8px";
