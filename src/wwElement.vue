@@ -152,7 +152,11 @@ export default {
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
     let potentialParentNode = null;
+    let dropPosition = null; // 'above' | 'below' | 'child'
+    let dropLevel = 0;
     const isPotentialParent = (node) => potentialParentNode != null && node === potentialParentNode;
+    const getDropPosition = () => dropPosition;
+    const getDropLevel = () => dropLevel;
 
     // Fill container mode refs
     const containerHeight = ref(0);
@@ -776,6 +780,8 @@ export default {
     const clearDragHighlight = () => {
       const node = potentialParentNode;
       potentialParentNode = null;
+      dropPosition = null;
+      dropLevel = 0;
       if (node && gridApi.value) {
         gridApi.value.refreshCells({ rowNodes: [node], force: true });
       }
@@ -818,9 +824,39 @@ export default {
     const onRowDragMove = (event) => {
       if (!props.content?.treeDataEnabled) return;
       const overNode = event.overNode || null;
-      if (overNode === potentialParentNode) return;
-      const nodesToRefresh = [potentialParentNode, overNode].filter(Boolean);
+      if (!overNode) {
+        clearDragHighlight();
+        return;
+      }
+
+      // Determine drop zone using native mouse event + row element
+      let newPosition = 'child';
+      let newLevel = (overNode.level || 0) + 1;
+      const mouseEvent = event.event;
+      if (mouseEvent) {
+        const rowEl = mouseEvent.target?.closest?.('.ag-row');
+        if (rowEl) {
+          const rect = rowEl.getBoundingClientRect();
+          const fraction = (mouseEvent.clientY - rect.top) / rect.height;
+          if (fraction < 0.3) {
+            newPosition = 'above';
+            newLevel = overNode.level || 0;
+          } else if (fraction > 0.7) {
+            newPosition = 'below';
+            newLevel = overNode.level || 0;
+          }
+          // else stays 'child' with level + 1
+        }
+      }
+
+      if (overNode === potentialParentNode && newPosition === dropPosition) return;
+
+      const oldNode = potentialParentNode;
       potentialParentNode = overNode;
+      dropPosition = newPosition;
+      dropLevel = newLevel;
+
+      const nodesToRefresh = [...new Set([oldNode, overNode].filter(Boolean))];
       if (nodesToRefresh.length > 0) {
         event.api.refreshCells({ rowNodes: nodesToRefresh, force: true });
       }
@@ -972,6 +1008,8 @@ export default {
       onRowDragLeave,
       onRowDragCancel,
       isPotentialParent,
+      getDropPosition,
+      getDropLevel,
       onColumnMoved,
       onColumnResized,
       getColumnHide,
@@ -1044,7 +1082,9 @@ export default {
       // Tree data drag target indicator via cellClassRules
       if (this.content?.treeDataEnabled && this.content?.rowReorder) {
         definition.cellClassRules = {
-          "ag-row-drag-target": (params) => this.isPotentialParent(params.node),
+          "drag-target-above": (params) => this.isPotentialParent(params.node) && this.getDropPosition() === 'above',
+          "drag-target-below": (params) => this.isPotentialParent(params.node) && this.getDropPosition() === 'below',
+          "drag-target-child": (params) => this.isPotentialParent(params.node) && this.getDropPosition() === 'child',
         };
       }
 
@@ -1130,7 +1170,15 @@ export default {
       if (this.content?.rowReorder) {
         def.rowDrag = true;
         def.cellClassRules = {
-          "ag-row-drag-target": (params) => this.isPotentialParent(params.node),
+          "drag-target-above": (params) => this.isPotentialParent(params.node) && this.getDropPosition() === 'above',
+          "drag-target-below": (params) => this.isPotentialParent(params.node) && this.getDropPosition() === 'below',
+          "drag-target-child": (params) => this.isPotentialParent(params.node) && this.getDropPosition() === 'child',
+        };
+        def.cellStyle = (params) => {
+          if (this.isPotentialParent(params.node)) {
+            return { '--drag-drop-level': this.getDropLevel() };
+          }
+          return null;
         };
       }
       return def;
@@ -2256,8 +2304,48 @@ export default {
     }
   }
 
-  // Row drag drop target indicator (tree mode)
-  :deep(.ag-cell.ag-row-drag-target) {
+  // Row drag drop target indicator (tree mode) — line above
+  :deep(.ag-cell.drag-target-above) {
+    position: relative;
+    &::after {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--ag-accent-color, #2196f3);
+      z-index: 10;
+      pointer-events: none;
+    }
+  }
+
+  // Row drag drop target indicator (tree mode) — line below
+  :deep(.ag-cell.drag-target-below) {
+    position: relative;
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--ag-accent-color, #2196f3);
+      z-index: 10;
+      pointer-events: none;
+    }
+  }
+
+  // Indent the line on the auto-group column based on tree level
+  :deep(.ag-cell[col-id="ag-Grid-AutoColumn"].drag-target-above),
+  :deep(.ag-cell[col-id="ag-Grid-AutoColumn"].drag-target-below) {
+    &::after {
+      left: calc(var(--drag-drop-level, 0) * var(--ag-row-group-indent-size, 28px));
+    }
+  }
+
+  // Row drag drop target indicator (tree mode) — child/nest highlight
+  :deep(.ag-cell.drag-target-child) {
     background-color: color-mix(in srgb, var(--ag-accent-color, #2196f3) 15%, transparent) !important;
   }
 
