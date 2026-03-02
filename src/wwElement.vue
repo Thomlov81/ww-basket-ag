@@ -151,7 +151,8 @@ export default {
 
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
-    const dragTargetRowId = ref(null);
+    let potentialParentNode = null;
+    const isPotentialParent = (node) => potentialParentNode != null && node === potentialParentNode;
 
     // Fill container mode refs
     const containerHeight = ref(0);
@@ -773,12 +774,11 @@ export default {
     };
 
     const clearDragHighlight = () => {
-      if (gridRoot.value) {
-        gridRoot.value
-          .querySelectorAll(".ag-row-drag-target")
-          .forEach((el) => el.classList.remove("ag-row-drag-target"));
+      const node = potentialParentNode;
+      potentialParentNode = null;
+      if (node && gridApi.value) {
+        gridApi.value.refreshCells({ rowNodes: [node], force: true });
       }
-      dragTargetRowId.value = null;
     };
 
     const onRowDragged = (event) => {
@@ -816,19 +816,13 @@ export default {
     };
 
     const onRowDragMove = (event) => {
-      if (!props.content?.treeDataEnabled || !gridRoot.value) return;
-      const overIdx = event.overIndex ?? -1;
-      if (overIdx === dragTargetRowId.value) return;
-      // Clear previous highlight
-      gridRoot.value
-        .querySelectorAll(".ag-row-drag-target")
-        .forEach((el) => el.classList.remove("ag-row-drag-target"));
-      // Apply new highlight
-      dragTargetRowId.value = overIdx;
-      if (overIdx >= 0) {
-        gridRoot.value
-          .querySelectorAll(`.ag-row[row-index="${overIdx}"]`)
-          .forEach((el) => el.classList.add("ag-row-drag-target"));
+      if (!props.content?.treeDataEnabled) return;
+      const overNode = event.overNode || null;
+      if (overNode === potentialParentNode) return;
+      const nodesToRefresh = [potentialParentNode, overNode].filter(Boolean);
+      potentialParentNode = overNode;
+      if (nodesToRefresh.length > 0) {
+        event.api.refreshCells({ rowNodes: nodesToRefresh, force: true });
       }
     };
 
@@ -977,6 +971,7 @@ export default {
       onRowDragMove,
       onRowDragLeave,
       onRowDragCancel,
+      isPotentialParent,
       onColumnMoved,
       onColumnResized,
       getColumnHide,
@@ -1045,6 +1040,13 @@ export default {
             ? `-${this.content?.cellAlignment || "left"}`
             : null,
       };
+
+      // Tree data drag target indicator via cellClassRules
+      if (this.content?.treeDataEnabled && this.content?.rowReorder) {
+        definition.cellClassRules = {
+          "ag-row-drag-target": (params) => this.isPotentialParent(params.node),
+        };
+      }
 
       // Cell style for editable/non-editable visual differentiation
       const editableBg = this.content?.editableCellBackgroundColor;
@@ -1127,6 +1129,9 @@ export default {
       }
       if (this.content?.rowReorder) {
         def.rowDrag = true;
+        def.cellClassRules = {
+          "ag-row-drag-target": (params) => this.isPotentialParent(params.node),
+        };
       }
       return def;
     },
@@ -2252,8 +2257,8 @@ export default {
   }
 
   // Row drag drop target indicator (tree mode)
-  :deep(.ag-row.ag-row-drag-target) {
-    box-shadow: inset 0 0 0 1px var(--ag-range-selection-border-color, #2196f3) !important;
+  :deep(.ag-cell.ag-row-drag-target) {
+    background-color: color-mix(in srgb, var(--ag-accent-color, #2196f3) 15%, transparent) !important;
   }
 
   // Drag handle column
