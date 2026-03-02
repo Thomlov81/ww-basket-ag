@@ -217,7 +217,6 @@ export default {
       "dragIconSize",
       "dragIconColor",
       "dragIconPadding",
-      "dragIconCursor",
       "initialFilters",
       "initialSort",
       "initialColumnsOrder",
@@ -2567,7 +2566,6 @@ export default {
     dragIconCursor: {
       label: { en: "Cursor" },
       type: "TextSelect",
-      section: "settings",
       options: {
         options: [
           { value: "grab", label: "Grab" },

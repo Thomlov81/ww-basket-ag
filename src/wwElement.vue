@@ -1507,6 +1507,11 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
+        // Tree drag handle styling
+        "--ww-drag-icon-color": this.content?.dragIconColor || null,
+        "--ww-drag-icon-size": this.content?.dragIconSize || null,
+        "--ww-drag-icon-padding": this.content?.dragIconPadding || null,
+        "--ww-drag-icon-cursor": this.content?.dragIconCursor || "grab",
       };
     },
     theme() {
@@ -2195,6 +2200,26 @@ export default {
   :deep(.ag-row-hover.ag-full-width-row.ag-row-group::before),
   :deep(.ag-row-selected::before) {
     top: -1px;
+  }
+
+  // Tree mode drag handle styling (native AG Grid icon)
+  :deep(.ag-row-drag) {
+    cursor: var(--ww-drag-icon-cursor, grab);
+    color: var(--ww-drag-icon-color, var(--ag-secondary-foreground-color));
+    padding: var(--ww-drag-icon-padding, 0);
+
+    .ag-icon {
+      width: var(--ww-drag-icon-size, 16px);
+      height: var(--ww-drag-icon-size, 16px);
+    }
+  }
+
+  // Row drag drop position indicator
+  :deep(.ag-row-highlight-above::after),
+  :deep(.ag-row-highlight-below::after) {
+    height: 2px !important;
+    background-color: var(--ag-range-selection-border-color, #2196f3) !important;
+    z-index: 3;
   }
 
   // Drag handle column
