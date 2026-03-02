@@ -196,6 +196,19 @@ export default {
           "selectionColumnAlignment",
         ],
       },
+      {
+        label: "Tree Data",
+        isCollapsible: true,
+        properties: [
+          "treeDataEnabled",
+          "treeDataParentIdField",
+          "treeGroupColumnHeader",
+          "treeGroupColumnField",
+          "treeGroupDefaultExpanded",
+          "treeShowChildCount",
+          "treeAllowParentField",
+        ],
+      },
       "movableColumns",
       "resizableColumns",
       "rowReorder",
@@ -1843,6 +1856,28 @@ export default {
                   array?.item?.cellDataType === "image",
                 bindable: true,
               },
+              aggFunc: {
+                label: "Aggregation",
+                type: "TextSelect",
+                options: {
+                  options: [
+                    { value: "none", label: "None" },
+                    { value: "sum", label: "Sum" },
+                    { value: "min", label: "Min" },
+                    { value: "max", label: "Max" },
+                    { value: "count", label: "Count" },
+                    { value: "avg", label: "Avg" },
+                    { value: "first", label: "First" },
+                    { value: "last", label: "Last" },
+                  ],
+                },
+                defaultValue: "none",
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image" ||
+                  array?.item?.cellDataType === "custom",
+                bindable: true,
+              },
               actionName: {
                 label: "Action Name",
                 type: "Text",
@@ -2354,6 +2389,108 @@ export default {
         type: "string",
         cssSupports: "border-radius",
       },
+    },
+    treeDataEnabled: {
+      label: { en: "Tree Data" },
+      type: "OnOff",
+      section: "settings",
+      bindable: true,
+      defaultValue: false,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "Enable or disable tree data mode (Enterprise feature)",
+      },
+      /* wwEditor:end */
+    },
+    treeDataParentIdField: {
+      label: { en: "Parent ID Field" },
+      type: "Text",
+      section: "settings",
+      defaultValue: "parentId",
+      bindable: true,
+      hidden: (content) => !content?.treeDataEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "The field name in row data that references the parent row ID",
+      },
+      /* wwEditor:end */
+    },
+    treeGroupColumnHeader: {
+      label: { en: "Group Column Header" },
+      type: "Text",
+      section: "settings",
+      defaultValue: "Group",
+      bindable: true,
+      hidden: (content) => !content?.treeDataEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "Header text for the auto-generated tree group column",
+      },
+      /* wwEditor:end */
+    },
+    treeGroupColumnField: {
+      label: { en: "Group Column Field" },
+      type: "Text",
+      section: "settings",
+      defaultValue: "",
+      bindable: true,
+      hidden: (content) => !content?.treeDataEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "Data field to display in the group column",
+      },
+      /* wwEditor:end */
+    },
+    treeGroupDefaultExpanded: {
+      label: { en: "Default Expanded Level" },
+      type: "Number",
+      section: "settings",
+      defaultValue: -1,
+      bindable: true,
+      hidden: (content) => !content?.treeDataEnabled,
+      options: {
+        min: -1,
+        max: 10,
+        step: 1,
+      },
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "number",
+        tooltip: "How many levels to expand by default (-1 = all)",
+      },
+      /* wwEditor:end */
+    },
+    treeShowChildCount: {
+      label: { en: "Show Child Count" },
+      type: "OnOff",
+      section: "settings",
+      defaultValue: false,
+      bindable: true,
+      hidden: (content) => !content?.treeDataEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "Show the number of children next to parent rows",
+      },
+      /* wwEditor:end */
+    },
+    treeAllowParentField: {
+      label: { en: "Allow Parent Field" },
+      type: "Text",
+      section: "settings",
+      defaultValue: "",
+      bindable: true,
+      hidden: (content) => !content?.treeDataEnabled,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip: "Field name that determines if a row can be a parent (e.g. 'allowTreeParent'). Leave empty to allow all rows.",
+      },
+      /* wwEditor:end */
     },
     rowReorder: {
       label: { en: "Row Reorder" },

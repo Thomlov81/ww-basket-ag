@@ -31,6 +31,12 @@
       :tooltipShowDelay="750"
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="true"
+      :suppressMoveWhenRowDragging="!!content.treeDataEnabled"
+      :treeData="!!content.treeDataEnabled"
+      :treeDataParentIdField="content.treeDataEnabled ? (content.treeDataParentIdField || 'parentId') : undefined"
+      :autoGroupColumnDef="autoGroupColumnDef"
+      :groupDefaultExpanded="content.treeDataEnabled ? (content.treeGroupDefaultExpanded ?? -1) : undefined"
+      :isRowValidDropPosition="content.treeDataEnabled ? isRowValidDropPosition : undefined"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
@@ -80,6 +86,7 @@ import {
   ModuleRegistry,
   themeQuartz,
 } from "ag-grid-community";
+import { TreeDataModule, LicenseManager } from "ag-grid-enterprise";
 import {
   AG_GRID_LOCALE_EN,
   AG_GRID_LOCALE_FR,
@@ -95,9 +102,9 @@ import SearchCellRenderer from "./components/SearchCellRenderer.vue";
 import SearchCellEditor from "./components/SearchCellEditor.vue";
 import InfoCellRenderer from "./components/InfoCellRenderer.vue";
 
-// TODO: maybe register less modules
-// TODO: maybe register modules per grid instead of globally
-ModuleRegistry.registerModules([AllCommunityModule]);
+LicenseManager.setLicenseKey("[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-122239}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{1 April 2026}____[v3]_[0102]_MTc3NDk5ODAwMDAwMA==4517e38208f4ebcaa34ad17de4a324a1");
+
+ModuleRegistry.registerModules([AllCommunityModule, TreeDataModule]);
 
 export default {
   components: {
@@ -766,14 +773,21 @@ export default {
       event.api.forEachNode((node) => {
         rows.push(node.data);
       });
+      const eventData = {
+        row: event.node.data,
+        id: event.node.id,
+        targetIndex: event.overIndex,
+        rows,
+      };
+      // Add tree-specific data when tree mode is active
+      if (props.content?.treeDataEnabled) {
+        const parentIdField = props.content?.treeDataParentIdField || "parentId";
+        eventData.parentId = event.node.data?.[parentIdField] || null;
+        eventData.overNodeId = event.overNode?.data?.id || event.overNode?.id || null;
+      }
       ctx.emit("trigger-event", {
         name: "rowDragged",
-        event: {
-          row: event.node.data,
-          id: event.node.id,
-          targetIndex: event.overIndex,
-          rows,
-        },
+        event: eventData,
       });
     };
 
@@ -1062,6 +1076,23 @@ export default {
       }
       return definition;
     },
+    autoGroupColumnDef() {
+      if (!this.content?.treeDataEnabled) return undefined;
+      const def = {
+        headerName: this.content?.treeGroupColumnHeader || "Group",
+        minWidth: 200,
+        cellRendererParams: {
+          suppressCount: !this.content?.treeShowChildCount,
+        },
+      };
+      if (this.content?.treeGroupColumnField) {
+        def.field = this.content.treeGroupColumnField;
+      }
+      if (this.content?.rowReorder) {
+        def.rowDrag = true;
+      }
+      return def;
+    },
     columnDefs() {
       if (!this.content?.columns) return [];
 
@@ -1135,6 +1166,9 @@ export default {
           headerClass: col?.headerAlignment ? `-${col.headerAlignment}` : null,
           ...(this.content?.cellAlignmentMode !== "custom"
             ? { cellClass: col?.cellAlignment ? `-${col.cellAlignment}` : null }
+            : {}),
+          ...(col?.aggFunc && col.aggFunc !== "none"
+            ? { aggFunc: col.aggFunc }
             : {}),
         };
 
@@ -1581,6 +1615,22 @@ export default {
     },
   },
   methods: {
+    isRowValidDropPosition(params) {
+      if (!this.content?.treeDataEnabled) return true;
+      const target = params.overNode?.data;
+      if (!target) return true; // dropping at root level is always valid
+
+      const parentIdField = this.content?.treeDataParentIdField || "parentId";
+
+      // Max 1 level: don't allow dropping onto a child (would create depth > 1)
+      if (target[parentIdField]) return false;
+
+      // Parent restriction: only allow drop onto parent-capable rows
+      const allowParentField = this.content?.treeAllowParentField;
+      if (allowParentField && !target[allowParentField]) return false;
+
+      return true;
+    },
     setupContainerObserver() {
       if (this.content?.layout !== "fill") return;
 
