@@ -48,6 +48,9 @@
       @row-clicked="onRowClicked"
       @row-drag-end="onRowDragged"
       @row-drag-enter="onRowDragEnter"
+      @row-drag-move="onRowDragMove"
+      @row-drag-leave="onRowDragLeave"
+      @row-drag-cancel="onRowDragCancel"
       @column-moved="onColumnMoved"
       @column-resized="onColumnResized"
       @pagination-changed="onPaginationChanged"
@@ -148,6 +151,7 @@ export default {
 
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
+    const dragTargetRowId = ref(null);
 
     // Fill container mode refs
     const containerHeight = ref(0);
@@ -768,7 +772,17 @@ export default {
       });
     };
 
+    const clearDragHighlight = () => {
+      if (dragTargetRowId.value != null && gridRoot.value) {
+        gridRoot.value
+          .querySelectorAll(`.ag-row[row-id="${CSS.escape(String(dragTargetRowId.value))}"]`)
+          .forEach((el) => el.classList.remove("ag-row-drag-target"));
+      }
+      dragTargetRowId.value = null;
+    };
+
     const onRowDragged = (event) => {
+      clearDragHighlight();
       const rows = [];
       event.api.forEachNode((node) => {
         rows.push(node.data);
@@ -800,6 +814,28 @@ export default {
         },
       });
     };
+
+    const onRowDragMove = (event) => {
+      if (!props.content?.treeDataEnabled) return;
+      const overId = event.overNode?.id ?? null;
+      if (overId === dragTargetRowId.value) return;
+      // Clear previous highlight
+      if (dragTargetRowId.value != null && gridRoot.value) {
+        gridRoot.value
+          .querySelectorAll(`.ag-row[row-id="${CSS.escape(String(dragTargetRowId.value))}"]`)
+          .forEach((el) => el.classList.remove("ag-row-drag-target"));
+      }
+      // Apply new highlight
+      dragTargetRowId.value = overId;
+      if (overId != null && gridRoot.value) {
+        gridRoot.value
+          .querySelectorAll(`.ag-row[row-id="${CSS.escape(String(overId))}"]`)
+          .forEach((el) => el.classList.add("ag-row-drag-target"));
+      }
+    };
+
+    const onRowDragLeave = () => { clearDragHighlight(); };
+    const onRowDragCancel = () => { clearDragHighlight(); };
 
     const onSelectionChanged = (event) => {
       if (!gridApi.value) return;
@@ -940,6 +976,9 @@ export default {
       forcedPaginationPageSize,
       onRowDragged,
       onRowDragEnter,
+      onRowDragMove,
+      onRowDragLeave,
+      onRowDragCancel,
       onColumnMoved,
       onColumnResized,
       getColumnHide,
@@ -2214,12 +2253,11 @@ export default {
     }
   }
 
-  // Row drag drop position indicator
-  :deep(.ag-row-highlight-above::after),
-  :deep(.ag-row-highlight-below::after) {
-    height: 2px !important;
-    background-color: var(--ag-range-selection-border-color, #2196f3) !important;
-    z-index: 3;
+  // Row drag drop target indicator (tree mode)
+  :deep(.ag-row-drag-target) {
+    background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 15%, transparent) !important;
+    outline: 1px solid var(--ag-range-selection-border-color, #2196f3);
+    outline-offset: -1px;
   }
 
   // Drag handle column
