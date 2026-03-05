@@ -196,6 +196,20 @@ export default {
       return found;
     }
 
+    // Find the row node under the actual mouse cursor (not the drag ghost)
+    function getRowNodeFromPoint(mouseEvent, api) {
+      const elements = document.elementsFromPoint(mouseEvent.clientX, mouseEvent.clientY);
+      const rowEl = elements.find(el => el.classList.contains('ag-row'));
+      if (!rowEl) return null;
+      const rowIndex = parseInt(rowEl.getAttribute('row-index'), 10);
+      if (isNaN(rowIndex)) return null;
+      let targetNode = null;
+      api.forEachNode(node => {
+        if (node.rowIndex === rowIndex) targetNode = node;
+      });
+      return targetNode;
+    }
+
     // Apply drag highlight directly to DOM
     function applyDragHighlight(rowElements, className) {
       clearDragDom();
@@ -877,7 +891,8 @@ export default {
     const onRowDragMove = (event) => {
       if (!props.content?.treeDataEnabled) return;
 
-      const overNode = event.overNode;
+      // Use actual cursor position instead of event.overNode (which tracks the drag ghost)
+      const overNode = getRowNodeFromPoint(event.event, event.api);
 
       // No target row or hovering over self
       if (!overNode || overNode === event.node) {
