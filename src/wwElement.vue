@@ -149,33 +149,41 @@ export default {
 
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
-    // Tree drag state — tracks drop intent during drag
+    // Tree drag state — tracks drop intent during drag (direct DOM manipulation)
     let dragState = {
       overNode: null,       // The AG Grid row node being hovered
       dropType: null,       // "child" | "above" | "below"
-      highlightNode: null,  // Node for child-highlight (overNode when child drop)
-      insertLineNode: null, // Node for insertion line
-      insertLinePos: null,  // "above" | "below"
     };
+    // Currently highlighted DOM elements and their applied class
+    let dragHighlightEls = [];
+    let dragHighlightClass = null;
 
-    const isDropTargetChild = (node) => dragState.highlightNode != null && node === dragState.highlightNode;
-    const isInsertLineAbove = (node) => dragState.insertLinePos === 'above' && dragState.insertLineNode != null && node === dragState.insertLineNode;
-    const isInsertLineBelow = (node) => dragState.insertLinePos === 'below' && dragState.insertLineNode != null && node === dragState.insertLineNode;
+    const DRAG_CLASSES = ['drag-target-child', 'drag-insert-above', 'drag-insert-below'];
+
+    // Remove all drag highlight classes from tracked elements
+    function clearDragDom() {
+      for (const el of dragHighlightEls) {
+        for (const cls of DRAG_CLASSES) el.classList.remove(cls);
+      }
+      dragHighlightEls = [];
+      dragHighlightClass = null;
+    }
+
+    // Find ALL ag-row elements for a given row node (center, pinned left/right, full-width)
+    function getRowElements(node) {
+      if (!node || node.rowIndex == null || !gridRoot.value) return [];
+      return [...gridRoot.value.querySelectorAll(`.ag-row[row-index="${node.rowIndex}"]`)];
+    }
 
     // Determine which zone of the row the mouse is in
-    function getDropZone(mouseEvent, rowElement) {
-      if (!rowElement) return 'middle';
-      const rect = rowElement.getBoundingClientRect();
+    function getDropZone(mouseEvent, rowElements) {
+      const el = rowElements[0];
+      if (!el) return 'middle';
+      const rect = el.getBoundingClientRect();
       const relativeY = mouseEvent.clientY - rect.top;
       if (relativeY < rect.height * 0.25) return 'top';
       if (relativeY > rect.height * 0.75) return 'bottom';
       return 'middle';
-    }
-
-    // Find the DOM element for a row node
-    function getRowElement(node) {
-      if (!node || node.rowIndex == null || !gridRoot.value) return null;
-      return gridRoot.value.querySelector(`[row-index="${node.rowIndex}"]`);
     }
 
     // Check if a node has children in the tree
@@ -188,20 +196,12 @@ export default {
       return found;
     }
 
-    // Update drag state and refresh only changed cells
-    function updateDragState(newState, api) {
-      const nodesToRefresh = new Set();
-      if (dragState.highlightNode) nodesToRefresh.add(dragState.highlightNode);
-      if (dragState.insertLineNode) nodesToRefresh.add(dragState.insertLineNode);
-      if (newState.highlightNode) nodesToRefresh.add(newState.highlightNode);
-      if (newState.insertLineNode) nodesToRefresh.add(newState.insertLineNode);
-
-      const changed = dragState.overNode !== newState.overNode || dragState.dropType !== newState.dropType;
-      Object.assign(dragState, newState);
-
-      if (changed && nodesToRefresh.size > 0) {
-        api.refreshCells({ rowNodes: [...nodesToRefresh], force: true });
-      }
+    // Apply drag highlight directly to DOM
+    function applyDragHighlight(rowElements, className) {
+      clearDragDom();
+      for (const el of rowElements) el.classList.add(className);
+      dragHighlightEls = rowElements;
+      dragHighlightClass = className;
     }
 
     // Fill container mode refs
@@ -824,11 +824,8 @@ export default {
     };
 
     const clearDragHighlight = () => {
-      const nodesToRefresh = [dragState.highlightNode, dragState.insertLineNode].filter(Boolean);
-      dragState = { overNode: null, dropType: null, highlightNode: null, insertLineNode: null, insertLinePos: null };
-      if (nodesToRefresh.length > 0 && gridApi.value) {
-        gridApi.value.refreshCells({ rowNodes: nodesToRefresh, force: true });
-      }
+      clearDragDom();
+      dragState = { overNode: null, dropType: null };
     };
 
     const onRowDragged = (event) => {
@@ -850,15 +847,15 @@ export default {
       if (props.content?.treeDataEnabled) {
         const parentIdField = props.content?.treeDataParentIdField || "parentId";
         eventData.parentId = event.node.data?.[parentIdField] || null;
-        eventData.overNodeId = finalDragState.overNode?.data?.id || finalDragState.overNode?.id || null;
-        eventData.overNodeData = finalDragState.overNode?.data || null;
-        eventData.dropType = finalDragState.dropType; // "child" | "above" | "below"
+        eventData.overNodeId = finalDragState.overNode?.data?.id ?? finalDragState.overNode?.id ?? null;
+        eventData.overNodeData = finalDragState.overNode?.data ?? null;
+        eventData.dropType = finalDragState.dropType ?? null; // "child" | "above" | "below"
 
         // Compute targetParentId for the consumer
         if (finalDragState.dropType === 'child') {
           eventData.targetParentId = eventData.overNodeId;
         } else {
-          eventData.targetParentId = finalDragState.overNode?.data?.[parentIdField] || null;
+          eventData.targetParentId = finalDragState.overNode?.data?.[parentIdField] ?? null;
         }
       }
       ctx.emit("trigger-event", {
@@ -881,11 +878,10 @@ export default {
       if (!props.content?.treeDataEnabled) return;
 
       const overNode = event.overNode;
-      const emptyState = { overNode: null, dropType: null, highlightNode: null, insertLineNode: null, insertLinePos: null };
 
       // No target row or hovering over self
       if (!overNode || overNode === event.node) {
-        updateDragState(emptyState, event.api);
+        clearDragHighlight();
         return;
       }
 
@@ -893,11 +889,11 @@ export default {
       const isOverNodeChild = !!overNode.data?.[parentIdField];
       const movingNodeHasChildren = hasChildren(event.node, event.api, parentIdField);
 
-      // Determine mouse position zone within the row
-      const rowElement = getRowElement(overNode);
-      const dropZone = getDropZone(event.event, rowElement);
+      // Find DOM elements for this row and determine mouse zone
+      const rowElements = getRowElements(overNode);
+      const dropZone = getDropZone(event.event, rowElements);
 
-      let dropType, highlightNode, insertLineNode, insertLinePos;
+      let dropType;
 
       if (dropZone === 'middle' && !isOverNodeChild) {
         // Middle zone of a root-level row => potential child drop
@@ -906,30 +902,24 @@ export default {
 
         if (isAllowedParent && !movingNodeHasChildren) {
           dropType = 'child';
-          highlightNode = overNode;
-          insertLineNode = null;
-          insertLinePos = null;
         } else {
-          // Row can't be parent or dragging a parent row => sibling below
           dropType = 'below';
-          highlightNode = null;
-          insertLineNode = overNode;
-          insertLinePos = 'below';
         }
       } else if (dropZone === 'top') {
         dropType = 'above';
-        highlightNode = null;
-        insertLineNode = overNode;
-        insertLinePos = 'above';
       } else {
-        // Bottom zone, or middle zone on a child row
         dropType = 'below';
-        highlightNode = null;
-        insertLineNode = overNode;
-        insertLinePos = 'below';
       }
 
-      updateDragState({ overNode, dropType, highlightNode, insertLineNode, insertLinePos }, event.api);
+      // Skip if nothing changed
+      if (dragState.overNode === overNode && dragState.dropType === dropType) return;
+
+      // Update state and apply DOM classes directly
+      dragState = { overNode, dropType };
+      const className = dropType === 'child' ? 'drag-target-child'
+        : dropType === 'above' ? 'drag-insert-above'
+        : 'drag-insert-below';
+      applyDragHighlight(rowElements, className);
     };
 
     const onRowDragLeave = () => { clearDragHighlight(); };
@@ -1077,9 +1067,6 @@ export default {
       onRowDragMove,
       onRowDragLeave,
       onRowDragCancel,
-      isDropTargetChild,
-      isInsertLineAbove,
-      isInsertLineBelow,
       onColumnMoved,
       onColumnResized,
       getColumnHide,
@@ -1148,15 +1135,6 @@ export default {
             ? `-${this.content?.cellAlignment || "left"}`
             : null,
       };
-
-      // Tree data drag target indicator via cellClassRules
-      if (this.content?.treeDataEnabled && this.content?.rowReorder) {
-        definition.cellClassRules = {
-          "drag-target-child": (params) => this.isDropTargetChild(params.node),
-          "drag-insert-above": (params) => this.isInsertLineAbove(params.node),
-          "drag-insert-below": (params) => this.isInsertLineBelow(params.node),
-        };
-      }
 
       // Cell style for editable/non-editable visual differentiation
       const editableBg = this.content?.editableCellBackgroundColor;
@@ -1239,11 +1217,6 @@ export default {
       }
       if (this.content?.rowReorder) {
         def.rowDrag = true;
-        def.cellClassRules = {
-          "drag-target-child": (params) => this.isDropTargetChild(params.node),
-          "drag-insert-above": (params) => this.isInsertLineAbove(params.node),
-          "drag-insert-below": (params) => this.isInsertLineBelow(params.node),
-        };
       }
       return def;
     },
@@ -2353,21 +2326,15 @@ export default {
   }
 
   // Tree mode: highlight row when dropping as child (full row tinted overlay)
-  :deep(.ag-cell.drag-target-child) {
-    position: relative;
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: var(--ag-accent-color, #2196f3);
-      opacity: 0.12;
-      pointer-events: none;
-      z-index: 5;
-    }
+  :deep(.ag-row.drag-target-child) {
+    background: color-mix(in srgb, var(--ag-accent-color, #2196f3) 12%, transparent) !important;
+    outline: 2px solid var(--ag-accent-color, #2196f3);
+    outline-offset: -2px;
+    z-index: 1;
   }
 
   // Tree mode: insertion line ABOVE a row (sibling drop)
-  :deep(.ag-cell.drag-insert-above) {
+  :deep(.ag-row.drag-insert-above) {
     position: relative;
     &::before {
       content: '';
@@ -2383,7 +2350,7 @@ export default {
   }
 
   // Tree mode: insertion line BELOW a row (sibling drop)
-  :deep(.ag-cell.drag-insert-below) {
+  :deep(.ag-row.drag-insert-below) {
     position: relative;
     &::after {
       content: '';
