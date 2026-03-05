@@ -24,7 +24,6 @@
       :columnHoverHighlight="content.columnHoverHighlight"
       :locale-text="localeText"
       enableCellTextSelection
-      ensureDomOrder
       :singleClickEdit="content?.singleClickEdit || false"
       :stopEditingWhenCellsLoseFocus="true"
       :suppressCellFocus="true"
@@ -2432,5 +2431,12 @@ export default {
     }
   }
   /* wwEditor:end */
+}
+</style>
+
+<style lang="scss">
+/* Hide AG Grid's drag ghost — broken by WeWeb ancestor CSS transforms (position: fixed) */
+.ag-dnd-ghost {
+  display: none !important;
 }
 </style>
