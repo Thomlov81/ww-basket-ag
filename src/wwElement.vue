@@ -35,6 +35,7 @@
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
+      :popupParent="popupParent"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
@@ -147,6 +148,7 @@ export default {
 
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
+    const popupParent = wwLib.getFrontDocument().body;
     // Tree drag state — tracks drop intent during drag
     let dragState = {
       overNode: null,       // The AG Grid row node being hovered
@@ -945,6 +947,7 @@ export default {
     }
 
     return {
+      popupParent,
       resolveMappingFormula,
       getIcon,
       settingsIconHtml,
