@@ -30,7 +30,6 @@
       :tooltipShowDelay="750"
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
-      suppressMoveWhenRowDragging
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
@@ -156,15 +155,6 @@ export default {
       overNode: null,       // The AG Grid row node being hovered
       dropType: null,       // "child" | "above" | "below"
     };
-    let ghostEl = null;  // Cloned row element shown at drop position
-
-    function removeGhost() {
-      if (ghostEl) {
-        ghostEl.remove();
-        ghostEl = null;
-      }
-    }
-
     // Find ALL ag-row elements for a given row node (center, pinned left/right, full-width)
     function getRowElements(node) {
       if (!node || node.rowIndex == null || !gridRoot.value) return [];
@@ -764,7 +754,6 @@ export default {
     };
 
     const clearDragHighlight = () => {
-      removeGhost();
       if (gridRoot.value) {
         gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
           el.classList.remove('ww-drop-child');
@@ -803,19 +792,6 @@ export default {
     };
 
     const onRowDragEnter = (event) => {
-      // Clone the dragged row for ghost visualization
-      const rowEls = getRowElements(event.node);
-      if (rowEls[0]) {
-        const doc = wwLib.getFrontDocument();
-        ghostEl = rowEls[0].cloneNode(true);
-        ghostEl.className = 'ag-row ww-ghost-row';
-        ghostEl.style.cssText = `
-          position: fixed; pointer-events: none; z-index: 99999;
-          opacity: 0.6; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        `;
-        doc.body.appendChild(ghostEl);
-      }
-
       ctx.emit("trigger-event", {
         name: "rowDragStart",
         event: { row: event.node.data, id: event.node.id },
@@ -851,22 +827,13 @@ export default {
         dropType = 'below';
       }
 
-      // Clear previous parent highlight (keep ghost alive)
+      // Clear previous parent highlight
       if (gridRoot.value) {
         gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
           el.classList.remove('ww-drop-child');
         });
       }
       dragState = { overNode, dropType };
-
-      // Position ghost at target row
-      if (ghostEl && rowElements[0]) {
-        const rect = rowElements[0].getBoundingClientRect();
-        ghostEl.style.top = (dropType === 'above' ? rect.top : rect.bottom) + 'px';
-        ghostEl.style.left = rect.left + 'px';
-        ghostEl.style.width = rect.width + 'px';
-        ghostEl.style.height = rect.height + 'px';
-      }
 
       // Highlight parent for child drops
       if (dropType === 'child') {
