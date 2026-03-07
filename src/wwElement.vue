@@ -30,11 +30,11 @@
       :tooltipShowDelay="750"
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
-      :suppressMoveWhenRowDragging="!!content.treeDataEnabled"
-      :treeData="!!content.treeDataEnabled"
-      :treeDataParentIdField="content.treeDataEnabled ? (content.treeDataParentIdField || 'parentId') : undefined"
+      suppressMoveWhenRowDragging
+      treeData
+      :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
-      :groupDefaultExpanded="content.treeDataEnabled ? (content.treeGroupDefaultExpanded ?? -1) : undefined"
+      :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
@@ -98,7 +98,6 @@ import {
 import ActionCellRenderer from "./components/ActionCellRenderer.vue";
 import ImageCellRenderer from "./components/ImageCellRenderer.vue";
 import WewebCellRenderer from "./components/WewebCellRenderer.vue";
-import DragCellRenderer from "./components/DragCellRenderer.vue";
 import SearchCellRenderer from "./components/SearchCellRenderer.vue";
 import SearchCellEditor from "./components/SearchCellEditor.vue";
 import InfoCellRenderer from "./components/InfoCellRenderer.vue";
@@ -113,7 +112,6 @@ export default {
     ActionCellRenderer,
     ImageCellRenderer,
     WewebCellRenderer,
-    DragCellRenderer,
     SearchCellRenderer,
     SearchCellEditor,
     InfoCellRenderer,
@@ -424,8 +422,8 @@ export default {
 
         const columnStates = {};
         rawStates.forEach((col, index) => {
-          // Skip system columns (selection checkbox, drag handle) - not configurable
-          if (col.colId === '__dragHandle' || col.colId?.startsWith('ag-Grid-')) return;
+          // Skip system columns (selection checkbox) - not configurable
+          if (col.colId?.startsWith('ag-Grid-')) return;
 
           let config = configByColId[col.colId];
           if (!config && index < configByIndex.length) {
@@ -669,40 +667,6 @@ export default {
     );
 
 
-    let initialFilter = "";
-    let initialSort = "";
-
-    watchEffect(() => {
-      if (!gridApi.value) return;
-      if (
-        props.content?.initialFilters &&
-        initialFilter !== JSON.stringify(props.content.initialFilters)
-      ) {
-        gridApi.value.setFilterModel(props.content.initialFilters);
-        initialFilter = JSON.stringify(props.content.initialFilters);
-      }
-      if (
-        props.content?.initialSort &&
-        initialSort !== JSON.stringify(props.content.initialSort)
-      ) {
-        gridApi.value.applyColumnState({
-          state: props.content.initialSort || [],
-          defaultState: { sort: null },
-        });
-        initialSort = JSON.stringify(props.content.initialSort);
-      }
-    });
-
-    watchEffect(() => {
-      if (!gridApi.value) return;
-      if (props.content?.initialColumnsOrder) {
-        gridApi.value.applyColumnState({
-          state: props.content.initialColumnsOrder.map((colId) => ({ colId })),
-          applyOrder: true,
-        });
-      }
-    });
-
     // Wrapper to not compute variables too often
     let rafId = null;
     const scheduleVariableUpdate = () => {
@@ -775,23 +739,9 @@ export default {
       { immediate: true, deep: true }
     );
 
-    const initialState = computed(() => {
-      const state = {
-        partialColumnState: true,
-      };
-      if (props.content?.initialFilters) {
-        state.filter = { filterModel: props.content.initialFilters };
-      }
-      if (props.content?.initialSort) {
-        state.sort = { sortModel: props.content.initialSort };
-      }
-      if (props.content?.initialColumnsOrder) {
-        state.columnOrder = {
-          orderedColIds: props.content.initialColumnsOrder,
-        };
-      }
-      return state;
-    });
+    const initialState = computed(() => ({
+      partialColumnState: true,
+    }));
 
     const onRowSelected = (event) => {
       const name = event.node.isSelected() ? "rowSelected" : "rowDeselected";
@@ -802,6 +752,11 @@ export default {
     };
 
     const clearDragHighlight = () => {
+      if (gridRoot.value) {
+        gridRoot.value.querySelectorAll('.ww-drop-above, .ww-drop-below, .ww-drop-child').forEach((el) => {
+          el.classList.remove('ww-drop-above', 'ww-drop-below', 'ww-drop-child');
+        });
+      }
       dragState = { overNode: null, dropType: null };
     };
 
@@ -814,27 +769,20 @@ export default {
       event.api.forEachNode((node) => {
         rows.push(node.data);
       });
+      const parentIdField = props.content?.treeDataParentIdField || "parentId";
       const eventData = {
         row: event.node.data,
         id: event.node.id,
         targetIndex: event.overIndex,
         rows,
+        parentId: event.node.data?.[parentIdField] || null,
+        overNodeId: finalDragState.overNode?.data?.id ?? finalDragState.overNode?.id ?? null,
+        overNodeData: finalDragState.overNode?.data ?? null,
+        dropType: finalDragState.dropType ?? null, // "child" | "above" | "below"
+        targetParentId: finalDragState.dropType === 'child'
+          ? (finalDragState.overNode?.data?.id ?? finalDragState.overNode?.id ?? null)
+          : (finalDragState.overNode?.data?.[parentIdField] ?? null),
       };
-      // Add tree-specific data when tree mode is active
-      if (props.content?.treeDataEnabled) {
-        const parentIdField = props.content?.treeDataParentIdField || "parentId";
-        eventData.parentId = event.node.data?.[parentIdField] || null;
-        eventData.overNodeId = finalDragState.overNode?.data?.id ?? finalDragState.overNode?.id ?? null;
-        eventData.overNodeData = finalDragState.overNode?.data ?? null;
-        eventData.dropType = finalDragState.dropType ?? null; // "child" | "above" | "below"
-
-        // Compute targetParentId for the consumer
-        if (finalDragState.dropType === 'child') {
-          eventData.targetParentId = eventData.overNodeId;
-        } else {
-          eventData.targetParentId = finalDragState.overNode?.data?.[parentIdField] ?? null;
-        }
-      }
       ctx.emit("trigger-event", {
         name: "rowDragged",
         event: eventData,
@@ -852,11 +800,9 @@ export default {
     };
 
     const onRowDragMove = (event) => {
-      if (!props.content?.treeDataEnabled) return;
-
       const overNode = event.overNode;
       if (!overNode || overNode === event.node) {
-        dragState = { overNode: null, dropType: null };
+        clearDragHighlight();
         return;
       }
 
@@ -881,6 +827,10 @@ export default {
       } else {
         dropType = 'below';
       }
+
+      clearDragHighlight();
+      const rowEls = getRowElements(overNode);
+      rowEls.forEach((el) => el.classList.add(`ww-drop-${dropType}`));
 
       dragState = { overNode, dropType };
     };
@@ -1109,14 +1059,6 @@ export default {
       if (editableBg || nonEditableBg) {
         const existingCellClass = definition.cellClass;
         definition.cellClass = (params) => {
-          if (params.colDef?.colId === "__dragHandle") {
-            return existingCellClass
-              ? typeof existingCellClass === "function"
-                ? existingCellClass(params)
-                : existingCellClass
-              : null;
-          }
-
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
@@ -1141,7 +1083,6 @@ export default {
       // Inline cellStyle for backgroundColor + cursor (skip drag column)
       if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
         definition.cellStyle = (params) => {
-          if (params.colDef?.colId === "__dragHandle") return null;
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
@@ -1167,7 +1108,6 @@ export default {
       return definition;
     },
     autoGroupColumnDef() {
-      if (!this.content?.treeDataEnabled) return undefined;
       const def = {
         headerName: this.content?.treeGroupColumnHeader || "Group",
         minWidth: 200,
@@ -1430,45 +1370,6 @@ export default {
         result.push(buildColumnDef(item));
       }
 
-      // Handle row reorder with dedicated drag column
-      if (this.content?.rowReorder && !this.content?.treeDataEnabled) {
-        const iconSizeRaw = this.content?.dragIconSize || "16px";
-        const iconSizePx = parseInt(iconSizeRaw, 10) || 16;
-        const paddingRaw = this.content?.dragIconPadding || "4px 8px";
-        const paddingParts = paddingRaw.split(/\s+/).map((p) => parseInt(p, 10) || 0);
-        const horizontalPadding =
-          paddingParts.length >= 4
-            ? paddingParts[1] + paddingParts[3]
-            : paddingParts.length >= 2
-              ? paddingParts[1] * 2
-              : paddingParts[0] * 2;
-        const dragColWidth = iconSizePx + horizontalPadding + 2;
-
-        result.unshift({
-          headerName: "",
-          colId: "__dragHandle",
-          cellRenderer: "DragCellRenderer",
-          cellRendererParams: {
-            iconType: this.content?.dragIconType,
-            iconSize: iconSizeRaw,
-            iconColor: this.content?.dragIconColor,
-            iconPadding: paddingRaw,
-            iconCursor: this.content?.dragIconCursor || "grab",
-            getIcon: this.getIcon,
-          },
-          width: dragColWidth,
-          maxWidth: dragColWidth,
-          minWidth: dragColWidth,
-          sortable: false,
-          filter: false,
-          resizable: false,
-          suppressMovable: true,
-          suppressHeaderMenuButton: true,
-          lockPosition: "left",
-          cellClass: "ag-drag-handle-cell",
-        });
-      }
-
       return result;
     },
     rowSelection() {
@@ -1597,11 +1498,6 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
-        // Tree drag handle styling
-        "--ww-drag-icon-color": this.content?.dragIconColor || null,
-        "--ww-drag-icon-size": this.content?.dragIconSize || null,
-        "--ww-drag-icon-padding": this.content?.dragIconPadding || null,
-        "--ww-drag-icon-cursor": this.content?.dragIconCursor || "grab",
       };
     },
     theme() {
@@ -2268,33 +2164,51 @@ export default {
     border-bottom: var(--ag-row-border);
   }
 
+  // Drag & Drop visual indicators
+  :deep(.ag-row.ww-drop-above) {
+    position: relative;
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--ag-range-selection-border-color, #2196f3);
+      z-index: 3;
+      pointer-events: none;
+    }
+  }
+  :deep(.ag-row.ww-drop-below) {
+    position: relative;
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--ag-range-selection-border-color, #2196f3);
+      z-index: 3;
+      pointer-events: none;
+    }
+  }
+  :deep(.ag-row.ww-drop-child) {
+    background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important;
+    outline: 1px solid var(--ag-range-selection-border-color, #2196f3);
+    outline-offset: -1px;
+  }
+  :deep(.ag-dnd-ghost) {
+    z-index: 9999 !important;
+    pointer-events: none;
+  }
+
   // Extend hover/selection overlays 1px above the row to close
   // any gap between the header border and the first row's hover color
   :deep(.ag-row-hover:not(.ag-full-width-row)::before),
   :deep(.ag-row-hover.ag-full-width-row.ag-row-group::before),
   :deep(.ag-row-selected::before) {
     top: -1px;
-  }
-
-  // Tree mode drag handle styling (native AG Grid icon)
-  :deep(.ag-row-drag) {
-    cursor: var(--ww-drag-icon-cursor, grab);
-    color: var(--ww-drag-icon-color, var(--ag-secondary-foreground-color));
-    padding: var(--ww-drag-icon-padding, 0);
-
-    .ag-icon {
-      width: var(--ww-drag-icon-size, 16px);
-      height: var(--ww-drag-icon-size, 16px);
-    }
-  }
-
-  // Drag handle column
-  :deep(.ag-drag-handle-cell) {
-    padding: 0 !important;
-
-    .ag-cell-value {
-      justify-content: center;
-    }
   }
 
   // Ensure cell content sits above the hover/selection overlay

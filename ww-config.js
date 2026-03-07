@@ -29,17 +29,6 @@ export default {
         ],
       },
       {
-        label: "Drag Handle",
-        isCollapsible: true,
-        properties: [
-          "dragIconType",
-          "dragIconSize",
-          "dragIconColor",
-          "dragIconPadding",
-          "dragIconCursor",
-        ],
-      },
-      {
         label: "Header",
         isCollapsible: true,
         properties: [
@@ -200,7 +189,6 @@ export default {
         label: "Tree Data",
         isCollapsible: true,
         properties: [
-          "treeDataEnabled",
           "treeDataParentIdField",
           "treeGroupColumnHeader",
           "treeGroupColumnField",
@@ -213,13 +201,6 @@ export default {
       "resizableColumns",
       "rowReorder",
       "reorderInfoBox",
-      "dragIconType",
-      "dragIconSize",
-      "dragIconColor",
-      "dragIconPadding",
-      "initialFilters",
-      "initialSort",
-      "initialColumnsOrder",
       ["lang", "localeText"],
     ],
   },
@@ -2298,39 +2279,6 @@ export default {
       },
       /* wwEditor:end */
     },
-    initialFilters: {
-      label: { en: "Initial Filters" },
-      type: "RawObject",
-      section: "settings",
-      bindable: true,
-      defaultValue: null,
-      bindingValidation: {
-        type: "object",
-        tooltip: "An object representing the initial filter model",
-      },
-    },
-    initialSort: {
-      label: { en: "Initial Sort" },
-      type: "RawObject",
-      section: "settings",
-      bindable: true,
-      defaultValue: null,
-      bindingValidation: {
-        type: "array",
-        tooltip: "An array representing the initial sort model",
-      },
-    },
-    initialColumnsOrder: {
-      label: { en: "Initial Columns Order" },
-      type: "RawObject",
-      section: "settings",
-      bindable: true,
-      defaultValue: null,
-      bindingValidation: {
-        type: "array",
-        tooltip: "An array representing the id of the initial columns order",
-      },
-    },
     lang: {
       label: { en: "Language" },
       type: "TextSelect",
@@ -2389,26 +2337,12 @@ export default {
         cssSupports: "border-radius",
       },
     },
-    treeDataEnabled: {
-      label: { en: "Tree Data" },
-      type: "OnOff",
-      section: "settings",
-      bindable: true,
-      defaultValue: false,
-      /* wwEditor:start */
-      bindingValidation: {
-        type: "boolean",
-        tooltip: "Enable or disable tree data mode (Enterprise feature)",
-      },
-      /* wwEditor:end */
-    },
     treeDataParentIdField: {
       label: { en: "Parent ID Field" },
       type: "Text",
       section: "settings",
       defaultValue: "parentId",
       bindable: true,
-      hidden: (content) => !content?.treeDataEnabled,
       /* wwEditor:start */
       bindingValidation: {
         type: "string",
@@ -2422,7 +2356,6 @@ export default {
       section: "settings",
       defaultValue: "Group",
       bindable: true,
-      hidden: (content) => !content?.treeDataEnabled,
       /* wwEditor:start */
       bindingValidation: {
         type: "string",
@@ -2436,7 +2369,6 @@ export default {
       section: "settings",
       defaultValue: "",
       bindable: true,
-      hidden: (content) => !content?.treeDataEnabled,
       /* wwEditor:start */
       bindingValidation: {
         type: "string",
@@ -2450,7 +2382,6 @@ export default {
       section: "settings",
       defaultValue: -1,
       bindable: true,
-      hidden: (content) => !content?.treeDataEnabled,
       options: {
         min: -1,
         max: 10,
@@ -2469,7 +2400,6 @@ export default {
       section: "settings",
       defaultValue: false,
       bindable: true,
-      hidden: (content) => !content?.treeDataEnabled,
       /* wwEditor:start */
       bindingValidation: {
         type: "boolean",
@@ -2483,7 +2413,6 @@ export default {
       section: "settings",
       defaultValue: "",
       bindable: true,
-      hidden: (content) => !content?.treeDataEnabled,
       /* wwEditor:start */
       bindingValidation: {
         type: "string",
@@ -2515,75 +2444,6 @@ export default {
         title: "Incompatible options",
         content: `Row reordering is not compatible with pagination. Pagination will be disabled`,
       },
-    },
-    dragIconType: {
-      label: { en: "Drag Icon" },
-      type: "SystemIcon",
-      bindable: true,
-      responsive: true,
-      states: true,
-      classes: true,
-      defaultValue: null,
-      hidden: (content) => !content?.rowReorder,
-    },
-    dragIconSize: {
-      label: { en: "Icon Size" },
-      type: "Length",
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 8, max: 48, default: true }],
-        noRange: true,
-      },
-      defaultValue: "16px",
-      bindable: true,
-      responsive: true,
-      states: true,
-      classes: true,
-      hidden: (content) => !content?.rowReorder,
-    },
-    dragIconColor: {
-      label: { en: "Icon Color" },
-      type: "Color",
-      bindable: true,
-      responsive: true,
-      states: true,
-      classes: true,
-      hidden: (content) => !content?.rowReorder,
-    },
-    dragIconPadding: {
-      label: { en: "Icon Padding" },
-      type: "Length",
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 0, max: 32, default: true }],
-        noRange: true,
-      },
-      defaultValue: "4px 8px",
-      bindable: true,
-      responsive: true,
-      states: true,
-      classes: true,
-      hidden: (content) => !content?.rowReorder,
-    },
-    dragIconCursor: {
-      label: { en: "Cursor" },
-      type: "TextSelect",
-      options: {
-        options: [
-          { value: "grab", label: "Grab" },
-          { value: "move", label: "Move" },
-          { value: "pointer", label: "Pointer" },
-          { value: "default", label: "Default" },
-          { value: "crosshair", label: "Crosshair" },
-        ],
-      },
-      defaultValue: "grab",
-      bindable: true,
-      hidden: (content) => !content?.rowReorder,
-      /* wwEditor:start */
-      bindingValidation: {
-        type: "string",
-        tooltip: "Valid values: grab | move | pointer | default | crosshair",
-      },
-      /* wwEditor:end */
     },
     // ── Cell Editing ──────────────────────────────────────────────
     singleClickEdit: {

@@ -70,9 +70,6 @@ A highly customizable data grid/table component that supports features like sort
 - `selectAll`: `'all' | 'currentPage' | 'filtered'` - Behavior of select all button
 - `pagination`: `boolean` - Enable/disable pagination. Default: `false`.
 - `paginationPageSize`: `number` - Number of rows per page. Default: `10`.
-- `initialFilters`: `{id: { filterType, type, filter } }` (Optional): An aggrid object describing the initial filtering. Here is an example: `{ id1: { filterType: "number", type: "greaterThan", filter: 50}}`
-- `initialSort`: `Array<{colId: id, sort: 'asc' |'dsc'}>` (Optional): Description of the initial sort column. Here is an example: `[{colId: "ID", sort: "asc"}]`
-- `initialColumnsOrder`: `Array<ColId>` (Optional): List of the column order, if different from columns definition ones
 - `lang`: `'en' | 'fr' | 'de' | 'pt' | 'custom'` - Locale use for the interface. Default: `"en"`. If `custom` the property localeText should be provided
 - `localeText`: only needed when lang is set to custom. Must be an object provided to aggrid 
 - `columns`: `Array<{
