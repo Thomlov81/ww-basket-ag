@@ -36,6 +36,7 @@
       :autoGroupColumnDef="autoGroupColumnDef"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       :popupParent="popupParent"
+      :dragAndDropImageComponent="DragGhostComponent"
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
@@ -96,6 +97,7 @@ import {
   AG_GRID_LOCALE_ES,
   AG_GRID_LOCALE_PT,
 } from "@ag-grid-community/locale";
+import { DragGhostComponent } from "./DragGhostComponent.js";
 import ActionCellRenderer from "./components/ActionCellRenderer.vue";
 import ImageCellRenderer from "./components/ImageCellRenderer.vue";
 import WewebCellRenderer from "./components/WewebCellRenderer.vue";
@@ -831,10 +833,13 @@ export default {
       }
 
       clearDragHighlight();
-      const rowEls = getRowElements(overNode);
-      rowEls.forEach((el) => el.classList.add(`ww-drop-${dropType}`));
-
       dragState = { overNode, dropType };
+
+      requestAnimationFrame(() => {
+        if (dragState.overNode !== overNode) return;
+        const rowEls = getRowElements(overNode);
+        rowEls.forEach((el) => el.classList.add(`ww-drop-${dragState.dropType}`));
+      });
     };
 
     const onRowDragLeave = () => { clearDragHighlight(); };
@@ -948,6 +953,7 @@ export default {
 
     return {
       popupParent,
+      DragGhostComponent,
       resolveMappingFormula,
       getIcon,
       settingsIconHtml,
@@ -2201,9 +2207,8 @@ export default {
     outline: 1px solid var(--ag-range-selection-border-color, #2196f3);
     outline-offset: -1px;
   }
-  :deep(.ag-dnd-ghost) {
-    z-index: 9999 !important;
-    pointer-events: none;
+  :deep(.ag-dnd-ghost:not(.custom-drag-ghost)) {
+    display: none !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close
