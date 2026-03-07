@@ -36,7 +36,7 @@
       :autoGroupColumnDef="autoGroupColumnDef"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       :popupParent="popupParent"
-      :dragAndDropImageComponent="DragGhostComponent"
+
       @grid-ready="onGridReady"
       @row-selected="onRowSelected"
       @selection-changed="onSelectionChanged"
@@ -97,7 +97,7 @@ import {
   AG_GRID_LOCALE_ES,
   AG_GRID_LOCALE_PT,
 } from "@ag-grid-community/locale";
-import { DragGhostComponent } from "./DragGhostComponent.js";
+
 import ActionCellRenderer from "./components/ActionCellRenderer.vue";
 import ImageCellRenderer from "./components/ImageCellRenderer.vue";
 import WewebCellRenderer from "./components/WewebCellRenderer.vue";
@@ -156,6 +156,14 @@ export default {
       overNode: null,       // The AG Grid row node being hovered
       dropType: null,       // "child" | "above" | "below"
     };
+    let ghostEl = null;  // Cloned row element shown at drop position
+
+    function removeGhost() {
+      if (ghostEl) {
+        ghostEl.remove();
+        ghostEl = null;
+      }
+    }
 
     // Find ALL ag-row elements for a given row node (center, pinned left/right, full-width)
     function getRowElements(node) {
@@ -756,9 +764,10 @@ export default {
     };
 
     const clearDragHighlight = () => {
+      removeGhost();
       if (gridRoot.value) {
-        gridRoot.value.querySelectorAll('.ww-drop-above, .ww-drop-below, .ww-drop-child').forEach((el) => {
-          el.classList.remove('ww-drop-above', 'ww-drop-below', 'ww-drop-child');
+        gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
+          el.classList.remove('ww-drop-child');
         });
       }
       dragState = { overNode: null, dropType: null };
@@ -794,12 +803,22 @@ export default {
     };
 
     const onRowDragEnter = (event) => {
+      // Clone the dragged row for ghost visualization
+      const rowEls = getRowElements(event.node);
+      if (rowEls[0]) {
+        const doc = wwLib.getFrontDocument();
+        ghostEl = rowEls[0].cloneNode(true);
+        ghostEl.className = 'ag-row ww-ghost-row';
+        ghostEl.style.cssText = `
+          position: fixed; pointer-events: none; z-index: 99999;
+          opacity: 0.6; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        `;
+        doc.body.appendChild(ghostEl);
+      }
+
       ctx.emit("trigger-event", {
         name: "rowDragStart",
-        event: {
-          row: event.node.data,
-          id: event.node.id,
-        },
+        event: { row: event.node.data, id: event.node.id },
       });
     };
 
@@ -832,14 +851,31 @@ export default {
         dropType = 'below';
       }
 
-      clearDragHighlight();
+      // Clear previous parent highlight (keep ghost alive)
+      if (gridRoot.value) {
+        gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
+          el.classList.remove('ww-drop-child');
+        });
+      }
       dragState = { overNode, dropType };
 
-      requestAnimationFrame(() => {
-        if (dragState.overNode !== overNode) return;
-        const rowEls = getRowElements(overNode);
-        rowEls.forEach((el) => el.classList.add(`ww-drop-${dragState.dropType}`));
-      });
+      // Position ghost at target row
+      if (ghostEl && rowElements[0]) {
+        const rect = rowElements[0].getBoundingClientRect();
+        ghostEl.style.top = (dropType === 'above' ? rect.top : rect.bottom) + 'px';
+        ghostEl.style.left = rect.left + 'px';
+        ghostEl.style.width = rect.width + 'px';
+        ghostEl.style.height = rect.height + 'px';
+      }
+
+      // Highlight parent for child drops
+      if (dropType === 'child') {
+        requestAnimationFrame(() => {
+          if (dragState.overNode !== overNode) return;
+          const rowEls = getRowElements(overNode);
+          rowEls.forEach((el) => el.classList.add('ww-drop-child'));
+        });
+      }
     };
 
     const onRowDragLeave = () => { clearDragHighlight(); };
@@ -953,7 +989,7 @@ export default {
 
     return {
       popupParent,
-      DragGhostComponent,
+
       resolveMappingFormula,
       getIcon,
       settingsIconHtml,
@@ -2174,40 +2210,10 @@ export default {
   }
 
   // Drag & Drop visual indicators
-  :deep(.ag-row.ww-drop-above) {
-    position: relative;
-    &::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background-color: var(--ag-range-selection-border-color, #2196f3);
-      z-index: 3;
-      pointer-events: none;
-    }
-  }
-  :deep(.ag-row.ww-drop-below) {
-    position: relative;
-    &::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background-color: var(--ag-range-selection-border-color, #2196f3);
-      z-index: 3;
-      pointer-events: none;
-    }
-  }
   :deep(.ag-row.ww-drop-child) {
     background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important;
-    outline: 1px solid var(--ag-range-selection-border-color, #2196f3);
-    outline-offset: -1px;
   }
-  :deep(.ag-dnd-ghost:not(.custom-drag-ghost)) {
+  :deep(.ag-dnd-ghost) {
     display: none !important;
   }
 
