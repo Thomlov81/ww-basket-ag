@@ -1101,7 +1101,8 @@ export default {
     autoGroupColumnDef() {
       const def = {
         headerName: this.content?.treeGroupColumnHeader || "Group",
-        minWidth: 200,
+        minWidth: parseInt(this.content?.treeGroupColumnMinWidth) || 50,
+        width: parseInt(this.content?.treeGroupColumnWidth) || undefined,
         cellRendererParams: {
           suppressCount: !this.content?.treeShowChildCount,
         },
@@ -2175,20 +2176,24 @@ export default {
     border-bottom: var(--ag-row-border);
   }
 
-  // Tree chevron icon styling
+  // Tree chevron icon styling (font-based icons: need font-size + line-height + width + height)
   :deep(.ag-icon-tree-open),
   :deep(.ag-icon-tree-closed) {
     color: var(--ww-tree-chevron-color);
+    font-size: var(--ww-tree-chevron-size);
+    line-height: var(--ww-tree-chevron-size);
     width: var(--ww-tree-chevron-size);
     height: var(--ww-tree-chevron-size);
   }
 
   // Tree drag handle styling
   :deep(.ag-drag-handle) {
-    color: var(--ww-tree-drag-color);
     cursor: var(--ww-tree-drag-cursor, grab);
   }
-  :deep(.ag-drag-handle .ag-icon) {
+  :deep(.ag-icon-grip) {
+    color: var(--ww-tree-drag-color);
+    font-size: var(--ww-tree-drag-size);
+    line-height: var(--ww-tree-drag-size);
     width: var(--ww-tree-drag-size);
     height: var(--ww-tree-drag-size);
   }

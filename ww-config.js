@@ -134,6 +134,24 @@ export default {
         ],
       },
       {
+        label: "Tree Column",
+        isCollapsible: true,
+        properties: [
+          "treeGroupColumnWidth",
+          "treeGroupColumnMinWidth",
+          "treeGroupColumnPadding",
+          "treeGroupIndentSize",
+          "treeLeafIcon",
+          "treeLeafIconSize",
+          "treeLeafIconColor",
+          "treeChevronColor",
+          "treeChevronSize",
+          "treeDragHandleColor",
+          "treeDragHandleSize",
+          "treeDragHandleCursor",
+        ],
+      },
+      {
         label: "Action",
         isCollapsible: true,
         properties: [
@@ -195,16 +213,6 @@ export default {
           "treeGroupDefaultExpanded",
           "treeShowChildCount",
           "treeAllowParentField",
-          "treeLeafIcon",
-          "treeLeafIconSize",
-          "treeLeafIconColor",
-          "treeGroupIndentSize",
-          "treeGroupColumnPadding",
-          "treeChevronColor",
-          "treeChevronSize",
-          "treeDragHandleColor",
-          "treeDragHandleSize",
-          "treeDragHandleCursor",
         ],
       },
       "movableColumns",
@@ -2430,10 +2438,33 @@ export default {
       },
       /* wwEditor:end */
     },
+    treeGroupColumnWidth: {
+      label: { en: "Group Column Width" },
+      type: "Length",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 30, max: 400 }],
+      },
+    },
+    treeGroupColumnMinWidth: {
+      label: { en: "Group Column Min Width" },
+      type: "Length",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
+      defaultValue: "50px",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 20, max: 400 }],
+      },
+    },
     treeLeafIcon: {
       label: { en: "Leaf Icon" },
       type: "SystemIcon",
-      section: "settings",
+      section: "style",
       bindable: true,
       responsive: true,
       states: true,
@@ -2443,7 +2474,7 @@ export default {
     treeLeafIconSize: {
       label: { en: "Leaf Icon Size" },
       type: "Length",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2455,7 +2486,7 @@ export default {
     treeLeafIconColor: {
       label: { en: "Leaf Icon Color" },
       type: "Color",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2463,7 +2494,7 @@ export default {
     treeGroupIndentSize: {
       label: { en: "Group Indent Size" },
       type: "Length",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2474,7 +2505,7 @@ export default {
     treeGroupColumnPadding: {
       label: { en: "Group Column Padding" },
       type: "Length",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2485,7 +2516,7 @@ export default {
     treeChevronColor: {
       label: { en: "Chevron Color" },
       type: "Color",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2493,7 +2524,7 @@ export default {
     treeChevronSize: {
       label: { en: "Chevron Size" },
       type: "Length",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2504,7 +2535,7 @@ export default {
     treeDragHandleColor: {
       label: { en: "Drag Handle Color" },
       type: "Color",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2512,7 +2543,7 @@ export default {
     treeDragHandleSize: {
       label: { en: "Drag Handle Size" },
       type: "Length",
-      section: "settings",
+      section: "style",
       responsive: true,
       states: true,
       classes: true,
@@ -2523,7 +2554,7 @@ export default {
     treeDragHandleCursor: {
       label: { en: "Drag Handle Cursor" },
       type: "TextSelect",
-      section: "settings",
+      section: "style",
       defaultValue: "grab",
       options: {
         options: [

@@ -1,5 +1,5 @@
 <template>
-    <span v-if="!isGroup" class="group-inner-leaf-icon" :style="iconStyle" v-html="iconHtml"></span>
+    <span v-if="isChild" class="group-inner-leaf-icon" :style="iconStyle" v-html="iconHtml"></span>
 </template>
 
 <script>
@@ -20,8 +20,8 @@ export default {
         };
     },
     computed: {
-        isGroup() {
-            return !!this.params?.node?.group;
+        isChild() {
+            return (this.params?.node?.level ?? 0) > 0;
         },
         innerParams() {
             return this.params?.innerRendererParams || {};
