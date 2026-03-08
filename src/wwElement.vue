@@ -162,13 +162,13 @@ export default {
     }
 
     // Determine which zone of the row the mouse is in
-    function getDropZone(mouseEvent, rowElements) {
-      const el = rowElements[0];
-      if (!el) return 'middle';
-      const rect = el.getBoundingClientRect();
-      const relativeY = mouseEvent.clientY - rect.top;
-      if (relativeY < rect.height * 0.25) return 'top';
-      if (relativeY > rect.height * 0.75) return 'bottom';
+    function getDropZone(event) {
+      const overNode = event.overNode;
+      if (!overNode || overNode.rowTop == null || !overNode.rowHeight) return 'middle';
+      const relativeY = event.y - overNode.rowTop;
+      const fraction = relativeY / overNode.rowHeight;
+      if (fraction < 0.25) return 'top';
+      if (fraction > 0.75) return 'bottom';
       return 'middle';
     }
 
@@ -809,8 +809,7 @@ export default {
       const isOverNodeChild = !!overNode.data?.[parentIdField];
       const movingNodeHasChildren = hasChildren(event.node, event.api, parentIdField);
 
-      const rowElements = getRowElements(overNode);
-      const dropZone = getDropZone(event.event, rowElements);
+      const dropZone = getDropZone(event);
 
       let dropType;
       if (dropZone === 'middle' && !isOverNodeChild) {
