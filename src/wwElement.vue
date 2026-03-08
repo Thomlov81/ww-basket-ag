@@ -150,37 +150,6 @@ export default {
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
     const popupParent = wwLib.getFrontDocument().body;
-    // Tree drag state — tracks drop intent during drag
-    let dragState = {
-      overNode: null,       // The AG Grid row node being hovered
-      dropType: null,       // "child" | "above" | "below"
-    };
-    // Find ALL ag-row elements for a given row node (center, pinned left/right, full-width)
-    function getRowElements(node) {
-      if (!node || node.rowIndex == null || !gridRoot.value) return [];
-      return [...gridRoot.value.querySelectorAll(`.ag-row[row-index="${node.rowIndex}"]`)];
-    }
-
-    // Determine which zone of the row the mouse is in
-    function getDropZone(event) {
-      const overNode = event.overNode;
-      if (!overNode || overNode.rowTop == null || !overNode.rowHeight) return 'middle';
-      const relativeY = event.y - overNode.rowTop;
-      const fraction = relativeY / overNode.rowHeight;
-      if (fraction < 0.25) return 'top';
-      if (fraction > 0.75) return 'bottom';
-      return 'middle';
-    }
-
-    // Check if a node has children in the tree
-    function hasChildren(node, api, parentIdField) {
-      const nodeId = node.data?.id || node.id;
-      let found = false;
-      api.forEachNode((n) => {
-        if (!found && n.data?.[parentIdField] === nodeId) found = true;
-      });
-      return found;
-    }
 
     // Fill container mode refs
     const containerHeight = ref(0);
@@ -759,12 +728,9 @@ export default {
           el.classList.remove('ww-drop-child');
         });
       }
-      dragState = { overNode: null, dropType: null };
     };
 
     const onRowDragged = (event) => {
-      // Capture drag state BEFORE clearing
-      const finalDragState = { ...dragState };
       clearDragHighlight();
 
       const rows = [];
@@ -772,18 +738,24 @@ export default {
         rows.push(node.data);
       });
       const parentIdField = props.content?.treeDataParentIdField || "parentId";
+      const rowsDrop = event.rowsDrop;
+
+      // Map v35 position to our dropType
+      let dropType = null;
+      if (rowsDrop?.position === 'Inside') dropType = 'child';
+      else if (rowsDrop?.position === 'Above') dropType = 'above';
+      else if (rowsDrop?.position === 'Below') dropType = 'below';
+
       const eventData = {
         row: event.node.data,
         id: event.node.id,
         targetIndex: event.overIndex,
         rows,
         parentId: event.node.data?.[parentIdField] || null,
-        overNodeId: finalDragState.overNode?.data?.id ?? finalDragState.overNode?.id ?? null,
-        overNodeData: finalDragState.overNode?.data ?? null,
-        dropType: finalDragState.dropType ?? null, // "child" | "above" | "below"
-        targetParentId: finalDragState.dropType === 'child'
-          ? (finalDragState.overNode?.data?.id ?? finalDragState.overNode?.id ?? null)
-          : (finalDragState.overNode?.data?.[parentIdField] ?? null),
+        overNodeId: rowsDrop?.target?.data?.id ?? rowsDrop?.target?.id ?? null,
+        overNodeData: rowsDrop?.target?.data ?? null,
+        dropType,
+        targetParentId: rowsDrop?.newParent?.data?.id ?? rowsDrop?.newParent?.id ?? null,
       };
       ctx.emit("trigger-event", {
         name: "rowDragged",
@@ -799,46 +771,20 @@ export default {
     };
 
     const onRowDragMove = (event) => {
-      const overNode = event.overNode;
-      if (!overNode || overNode === event.node) {
-        clearDragHighlight();
-        return;
-      }
-
-      const parentIdField = props.content?.treeDataParentIdField || 'parentId';
-      const isOverNodeChild = !!overNode.data?.[parentIdField];
-      const movingNodeHasChildren = hasChildren(event.node, event.api, parentIdField);
-
-      const dropZone = getDropZone(event);
-
-      let dropType;
-      if (dropZone === 'middle' && !isOverNodeChild) {
-        const allowParentField = props.content?.treeAllowParentField;
-        const isAllowedParent = !allowParentField || !!overNode.data?.[allowParentField];
-        if (isAllowedParent && !movingNodeHasChildren) {
-          dropType = 'child';
-        } else {
-          dropType = 'below';
-        }
-      } else if (dropZone === 'top') {
-        dropType = 'above';
-      } else {
-        dropType = 'below';
-      }
-
-      // Clear previous parent highlight
+      // Clear previous highlight
       if (gridRoot.value) {
         gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
           el.classList.remove('ww-drop-child');
         });
       }
-      dragState = { overNode, dropType };
 
-      // Highlight parent for child drops
-      if (dropType === 'child') {
+      // Highlight parent for "Inside" drops (v35 native zone detection)
+      const rowsDrop = event.rowsDrop;
+      if (rowsDrop?.position === 'Inside' && rowsDrop.target) {
         requestAnimationFrame(() => {
-          if (dragState.overNode !== overNode) return;
-          const rowEls = getRowElements(overNode);
+          const idx = rowsDrop.target.rowIndex;
+          if (idx == null || !gridRoot.value) return;
+          const rowEls = gridRoot.value.querySelectorAll(`.ag-row[row-index="${idx}"]`);
           rowEls.forEach((el) => el.classList.add('ww-drop-child'));
         });
       }
@@ -2178,9 +2124,6 @@ export default {
   // Drag & Drop visual indicators
   :deep(.ag-row.ww-drop-child) {
     background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important;
-  }
-  :deep(.ag-dnd-ghost) {
-    display: none !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close
