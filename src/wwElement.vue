@@ -732,11 +732,8 @@ export default {
     };
 
     const clearDragHighlight = () => {
-      if (gridRoot.value) {
-        gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
-          el.classList.remove('ww-drop-child');
-        });
-      }
+      const styleEl = gridRoot.value?.querySelector('#ww-drag-highlight');
+      if (styleEl) styleEl.textContent = '';
     };
 
     const onRowDragged = (event) => {
@@ -780,22 +777,19 @@ export default {
     };
 
     const onRowDragMove = (event) => {
-      // Clear previous highlight
-      if (gridRoot.value) {
-        gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
-          el.classList.remove('ww-drop-child');
-        });
+      if (!gridRoot.value) return;
+      let styleEl = gridRoot.value.querySelector('#ww-drag-highlight');
+      if (!styleEl) {
+        styleEl = gridRoot.value.ownerDocument.createElement('style');
+        styleEl.id = 'ww-drag-highlight';
+        gridRoot.value.appendChild(styleEl);
       }
-
-      // Highlight parent for "Inside" drops (v35 native zone detection)
       const rowsDrop = event.rowsDrop;
       if (rowsDrop?.position === 'inside' && rowsDrop.target) {
-        requestAnimationFrame(() => {
-          const idx = rowsDrop.target.rowIndex;
-          if (idx == null || !gridRoot.value) return;
-          const rowEls = gridRoot.value.querySelectorAll(`.ag-row[row-index="${idx}"]`);
-          rowEls.forEach((el) => el.classList.add('ww-drop-child'));
-        });
+        const rowId = rowsDrop.target.id;
+        styleEl.textContent = `.ag-row[row-id="${rowId}"] { background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important; }`;
+      } else {
+        styleEl.textContent = '';
       }
     };
 
@@ -2129,11 +2123,6 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
-  }
-
-  // Drag & Drop visual indicators
-  :deep(.ag-row.ww-drop-child) {
-    background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close
