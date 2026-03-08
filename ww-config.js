@@ -194,6 +194,7 @@ export default {
           "treeGroupColumnField",
           "treeGroupDefaultExpanded",
           "treeShowChildCount",
+          "treeHideGroupValue",
           "treeAllowParentField",
         ],
       },
@@ -2404,6 +2405,20 @@ export default {
       bindingValidation: {
         type: "boolean",
         tooltip: "Show the number of children next to parent rows",
+      },
+      /* wwEditor:end */
+    },
+    treeHideGroupValue: {
+      label: { en: "Hide Group Value Text" },
+      type: "OnOff",
+      section: "settings",
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "boolean",
+        tooltip:
+          "Hide the group key text in the tree column. Group rows show only the chevron and child count; leaf rows show a subdirectory arrow icon.",
       },
       /* wwEditor:end */
     },
