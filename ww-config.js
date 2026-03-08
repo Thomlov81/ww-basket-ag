@@ -150,6 +150,7 @@ export default {
           "treeDragHandleColor",
           "treeDragHandleSize",
           "treeDragHandleCursor",
+          "treeChildRowBackgroundColor",
         ],
       },
       {
@@ -2569,6 +2570,14 @@ export default {
           { value: "default", label: "Default" },
         ],
       },
+    },
+    treeChildRowBackgroundColor: {
+      label: { en: "Child Row Background" },
+      type: "Color",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
     },
     rowReorder: {
       label: { en: "Row Reorder" },

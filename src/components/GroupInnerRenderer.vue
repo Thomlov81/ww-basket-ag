@@ -52,7 +52,6 @@ export default {
 .group-inner-leaf-icon {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
 
     :deep(svg) {
         width: 100%;

@@ -34,6 +34,7 @@
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
+      :get-row-style="getRowStyle"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       :popupParent="popupParent"
 
@@ -1117,11 +1118,24 @@ export default {
         leafIconSize: this.content?.treeLeafIconSize,
         leafIconColor: this.content?.treeLeafIconColor,
       };
-      if (this.content?.treeGroupColumnPadding) {
-        def.cellStyle = {
-          paddingLeft: this.content.treeGroupColumnPadding,
-          paddingRight: this.content.treeGroupColumnPadding,
+      // Merge padding + editable background on group column cells
+      const groupPadding = this.content?.treeGroupColumnPadding;
+      const editableBg = this.content?.editableCellBackgroundColor;
+      const editableCursor = this.content?.editableCellCursor;
+      if (groupPadding || editableBg || editableCursor) {
+        def.cellStyle = () => {
+          const style = {};
+          if (groupPadding) {
+            style.paddingLeft = groupPadding;
+            style.paddingRight = groupPadding;
+          }
+          if (editableBg) style.backgroundColor = editableBg;
+          if (editableCursor) style.cursor = editableCursor;
+          return Object.keys(style).length > 0 ? style : null;
         };
+      }
+      if (editableBg) {
+        def.cellClass = "ww-cell-editable";
       }
       if (this.content?.rowReorder) {
         def.rowDrag = true;
@@ -1619,6 +1633,12 @@ export default {
     },
   },
   methods: {
+    getRowStyle(params) {
+      if ((params.node?.level ?? 0) > 0 && this.content?.treeChildRowBackgroundColor) {
+        return { backgroundColor: this.content.treeChildRowBackgroundColor };
+      }
+      return null;
+    },
     setupContainerObserver() {
       if (this.content?.layout !== "fill") return;
 
@@ -2177,14 +2197,19 @@ export default {
     border-bottom: var(--ag-row-border);
   }
 
+  // Tree group cell: vertically center all items (AG Grid defaults to flex-start)
+  :deep(.ag-cell-wrapper.ag-row-group) {
+    align-items: center;
+  }
+
   // Tree chevron icon styling (font-based icons: need font-size + line-height + width + height)
   :deep(.ag-icon-tree-open),
   :deep(.ag-icon-tree-closed) {
-    color: var(--ww-tree-chevron-color);
-    font-size: var(--ww-tree-chevron-size);
-    line-height: var(--ww-tree-chevron-size);
-    width: var(--ww-tree-chevron-size);
-    height: var(--ww-tree-chevron-size);
+    color: var(--ww-tree-chevron-color, var(--ag-icon-font-color));
+    font-size: var(--ww-tree-chevron-size, var(--ag-icon-size));
+    line-height: var(--ww-tree-chevron-size, var(--ag-icon-size));
+    width: var(--ww-tree-chevron-size, var(--ag-icon-size));
+    height: var(--ww-tree-chevron-size, var(--ag-icon-size));
   }
 
   // Tree drag handle styling
@@ -2192,11 +2217,11 @@ export default {
     cursor: var(--ww-tree-drag-cursor, grab);
   }
   :deep(.ag-icon-grip) {
-    color: var(--ww-tree-drag-color);
-    font-size: var(--ww-tree-drag-size);
-    line-height: var(--ww-tree-drag-size);
-    width: var(--ww-tree-drag-size);
-    height: var(--ww-tree-drag-size);
+    color: var(--ww-tree-drag-color, var(--ag-icon-font-color));
+    font-size: var(--ww-tree-drag-size, var(--ag-icon-size));
+    line-height: var(--ww-tree-drag-size, var(--ag-icon-size));
+    width: var(--ww-tree-drag-size, var(--ag-icon-size));
+    height: var(--ww-tree-drag-size, var(--ag-icon-size));
   }
 
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
