@@ -31,7 +31,7 @@
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
       :isRowValidDropPosition="isRowValidDropPosition"
-      :getRowStyle="getRowStyle"
+      :rowClassRules="rowClassRules"
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
@@ -734,17 +734,16 @@ export default {
 
     const highlightedParentId = ref(null);
 
-    const getRowStyle = (params) => {
-      if (highlightedParentId.value != null && params.node.id === highlightedParentId.value) {
-        return { backgroundColor: 'rgba(33, 150, 243, 0.1)' };
-      }
-      return undefined;
-    };
+    const rowClassRules = computed(() => ({
+      'ww-drag-parent': (params) => {
+        return highlightedParentId.value != null && params.node.id === highlightedParentId.value;
+      },
+    }));
 
     const clearDragHighlight = () => {
       if (highlightedParentId.value != null) {
         highlightedParentId.value = null;
-        gridApi.value?.redrawRows();
+        gridApi.value?.refreshCells({ columns: [] });
       }
     };
 
@@ -795,7 +794,7 @@ export default {
 
       if (parentId !== highlightedParentId.value) {
         highlightedParentId.value = parentId;
-        event.api.redrawRows();
+        event.api.refreshCells({ columns: [] });
       }
     };
 
@@ -942,7 +941,7 @@ export default {
       }),
       forcedPaginationPageSize,
       isRowValidDropPosition,
-      getRowStyle,
+      rowClassRules,
       onRowDragged,
       onRowDragEnter,
       onRowDragMove,
@@ -2130,6 +2129,11 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
+  }
+
+  // Drag & drop parent highlight
+  :deep(.ag-row.ww-drag-parent) {
+    background-color: rgba(33, 150, 243, 0.1) !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close
