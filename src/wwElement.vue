@@ -30,6 +30,7 @@
       :tooltipShowDelay="750"
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
+      :isRowValidDropPosition="isRowValidDropPosition"
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
@@ -722,6 +723,14 @@ export default {
       });
     };
 
+    const isRowValidDropPosition = (rowsDrop) => {
+      // Prevent dropping "inside" a child row (would create grandchildren)
+      if (rowsDrop.position === 'inside' && rowsDrop.overNode?.level > 0) {
+        return false;
+      }
+      return true;
+    };
+
     const clearDragHighlight = () => {
       if (gridRoot.value) {
         gridRoot.value.querySelectorAll('.ww-drop-child').forEach((el) => {
@@ -742,9 +751,9 @@ export default {
 
       // Map v35 position to our dropType
       let dropType = null;
-      if (rowsDrop?.position === 'Inside') dropType = 'child';
-      else if (rowsDrop?.position === 'Above') dropType = 'above';
-      else if (rowsDrop?.position === 'Below') dropType = 'below';
+      if (rowsDrop?.position === 'inside') dropType = 'child';
+      else if (rowsDrop?.position === 'above') dropType = 'above';
+      else if (rowsDrop?.position === 'below') dropType = 'below';
 
       const eventData = {
         row: event.node.data,
@@ -780,7 +789,7 @@ export default {
 
       // Highlight parent for "Inside" drops (v35 native zone detection)
       const rowsDrop = event.rowsDrop;
-      if (rowsDrop?.position === 'Inside' && rowsDrop.target) {
+      if (rowsDrop?.position === 'inside' && rowsDrop.target) {
         requestAnimationFrame(() => {
           const idx = rowsDrop.target.rowIndex;
           if (idx == null || !gridRoot.value) return;
@@ -932,6 +941,7 @@ export default {
         }
       }),
       forcedPaginationPageSize,
+      isRowValidDropPosition,
       onRowDragged,
       onRowDragEnter,
       onRowDragMove,
