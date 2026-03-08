@@ -2202,6 +2202,12 @@ export default {
     align-items: center;
   }
 
+  // AG Grid excludes .ag-group-value from its centering rule — add flex centering
+  :deep(.ag-group-value) {
+    display: flex;
+    align-items: center;
+  }
+
   // Tree chevron icon styling (font-based icons: need font-size + line-height + width + height)
   :deep(.ag-icon-tree-open),
   :deep(.ag-icon-tree-closed) {
