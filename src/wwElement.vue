@@ -798,7 +798,7 @@ export default {
         const pointerPos = rowsDrop.pointerPos;
 
         if (overNode) {
-          if (pointerPos === 'inside' && overNode.level === 0) {
+          if ((pointerPos === 'inside' || pointerPos === 'below') && overNode.level === 0) {
             // Dragging into the middle of a root row → it becomes the parent
             parentNode = overNode;
           } else if (overNode.level > 0 && overNode.parent && overNode.parent.level >= 0) {
