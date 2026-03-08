@@ -732,8 +732,12 @@ export default {
     };
 
     const clearDragHighlight = () => {
-      const styleEl = gridRoot.value?.querySelector('#ww-drag-highlight');
-      if (styleEl) styleEl.textContent = '';
+      if (gridRoot.value) {
+        gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
+          el.style.removeProperty('background-color');
+          el.removeAttribute('data-ww-highlight');
+        });
+      }
     };
 
     const onRowDragged = (event) => {
@@ -778,30 +782,19 @@ export default {
 
     const onRowDragMove = (event) => {
       if (!gridRoot.value) return;
-      let styleEl = gridRoot.value.querySelector('#ww-drag-highlight');
-      if (!styleEl) {
-        styleEl = gridRoot.value.ownerDocument.createElement('style');
-        styleEl.id = 'ww-drag-highlight';
-        gridRoot.value.appendChild(styleEl);
-      }
-      const rowsDrop = event.rowsDrop;
-      console.log('[drag-debug]', {
-        position: rowsDrop?.position,
-        targetId: rowsDrop?.target?.id,
-        targetRowIndex: rowsDrop?.target?.rowIndex,
-        allowed: rowsDrop?.allowed,
-        inside: rowsDrop?.inside,
-        newParentId: rowsDrop?.newParent?.id,
+      // Clear previous highlights
+      gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
+        el.style.removeProperty('background-color');
+        el.removeAttribute('data-ww-highlight');
       });
+      // Highlight target for "inside" drops
+      const rowsDrop = event.rowsDrop;
       if (rowsDrop?.position === 'inside' && rowsDrop.target) {
         const rowId = rowsDrop.target.id;
-        const rowEls = gridRoot.value.querySelectorAll('[row-id]');
-        const rowIds = Array.from(rowEls).map(el => el.getAttribute('row-id'));
-        console.log('[drag-debug] Setting highlight for row-id:', rowId, 'Available row-ids:', rowIds);
-        styleEl.textContent = `.ag-row[row-id="${rowId}"] { background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important; }`;
-        console.log('[drag-debug] Style element content:', styleEl.textContent);
-      } else {
-        styleEl.textContent = '';
+        gridRoot.value.querySelectorAll(`.ag-row[row-id="${rowId}"]`).forEach((el) => {
+          el.style.setProperty('background-color', 'rgba(33, 150, 243, 0.1)', 'important');
+          el.setAttribute('data-ww-highlight', '');
+        });
       }
     };
 
