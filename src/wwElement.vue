@@ -789,16 +789,16 @@ export default {
       // nulls it when the dragged row already belongs to that parent.
       let parentNode = null;
 
-      if (rowsDrop.newParent && rowsDrop.newParent.level >= 0) {
+      if (rowsDrop.newParent && rowsDrop.newParent.level === 0) {
         // newParent available (first drag into a new parent)
         parentNode = rowsDrop.newParent;
       } else {
-        // newParent was nulled — compute from overNode + position
+        // newParent was nulled — compute from overNode + pointerPos (raw mouse position)
         const overNode = event.overNode;
-        const position = rowsDrop.position;
+        const pointerPos = rowsDrop.pointerPos;
 
         if (overNode) {
-          if (position === 'inside' && overNode.level === 0) {
+          if (pointerPos === 'inside' && overNode.level === 0) {
             // Dragging into the middle of a root row → it becomes the parent
             parentNode = overNode;
           } else if (overNode.level > 0 && overNode.parent && overNode.parent.level >= 0) {
