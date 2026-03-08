@@ -742,8 +742,11 @@ export default {
 
     const clearDragHighlight = () => {
       if (highlightedParentId.value != null) {
+        const node = gridApi.value?.getRowNode(highlightedParentId.value);
         highlightedParentId.value = null;
-        gridApi.value?.refreshCells({ columns: [] });
+        if (node) {
+          gridApi.value?.redrawRows({ rowNodes: [node] });
+        }
       }
     };
 
@@ -793,8 +796,19 @@ export default {
       const parentId = (newParent && newParent.level >= 0) ? newParent.id : null;
 
       if (parentId !== highlightedParentId.value) {
+        const rowNodes = [];
+        if (highlightedParentId.value != null) {
+          const prevNode = event.api.getRowNode(highlightedParentId.value);
+          if (prevNode) rowNodes.push(prevNode);
+        }
+        if (parentId != null) {
+          const newNode = event.api.getRowNode(parentId);
+          if (newNode) rowNodes.push(newNode);
+        }
         highlightedParentId.value = parentId;
-        event.api.refreshCells({ columns: [] });
+        if (rowNodes.length) {
+          event.api.redrawRows({ rowNodes });
+        }
       }
     };
 
