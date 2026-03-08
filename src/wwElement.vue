@@ -1521,6 +1521,8 @@ export default {
         "--ag-cell-widget-spacing": this.content?.treeGroupCellWidgetSpacing,
         "--ww-tree-chevron-color": this.content?.treeChevronColor,
         "--ww-tree-chevron-size": this.content?.treeChevronSize,
+        "--ww-tree-chevron-hover-color": this.content?.treeChevronHoverColor,
+        "--ww-tree-chevron-hover-padding": this.content?.treeChevronHoverPadding,
         "--ww-tree-drag-color": this.content?.treeDragHandleColor,
         "--ww-tree-drag-size": this.content?.treeDragHandleSize,
         "--ww-tree-drag-cursor": this.content?.treeDragHandleCursor,
@@ -2208,6 +2210,11 @@ export default {
     align-items: center;
   }
 
+  // Remove AG Grid's built-in leaf indent so leaf icon aligns with the chevron position
+  :deep(.ag-row-group-leaf-indent) {
+    margin-left: 0;
+  }
+
   // Tree chevron icon styling (font-based icons: need font-size + line-height + width + height)
   :deep(.ag-icon-tree-open),
   :deep(.ag-icon-tree-closed) {
@@ -2216,6 +2223,13 @@ export default {
     line-height: var(--ww-tree-chevron-size, var(--ag-icon-size));
     width: var(--ww-tree-chevron-size, var(--ag-icon-size));
     height: var(--ww-tree-chevron-size, var(--ag-icon-size));
+  }
+
+  // Chevron hover background box (overrides quartz theme's built-in box-shadow hover)
+  :deep(.ag-group-expanded .ag-icon:hover),
+  :deep(.ag-group-contracted .ag-icon:hover) {
+    background-color: var(--ww-tree-chevron-hover-color, var(--ag-quartz-icon-hover-color));
+    box-shadow: 0 0 0 var(--ww-tree-chevron-hover-padding, 4px) var(--ww-tree-chevron-hover-color, var(--ag-quartz-icon-hover-color));
   }
 
   // Tree drag handle styling

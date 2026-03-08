@@ -147,6 +147,8 @@ export default {
           "treeLeafIconColor",
           "treeChevronColor",
           "treeChevronSize",
+          "treeChevronHoverColor",
+          "treeChevronHoverPadding",
           "treeDragHandleColor",
           "treeDragHandleSize",
           "treeDragHandleCursor",
@@ -2536,6 +2538,26 @@ export default {
       classes: true,
       options: {
         unitChoices: [{ value: "px", label: "px", min: 8, max: 32 }],
+      },
+    },
+    treeChevronHoverColor: {
+      label: { en: "Chevron Hover Color" },
+      type: "Color",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    treeChevronHoverPadding: {
+      label: { en: "Chevron Hover Size" },
+      type: "Length",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
+      defaultValue: "4px",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 12 }],
       },
     },
     treeDragHandleColor: {
