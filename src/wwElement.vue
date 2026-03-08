@@ -1109,8 +1109,18 @@ export default {
       if (this.content?.treeGroupColumnField) {
         def.field = this.content.treeGroupColumnField;
       }
-      if (this.content?.treeHideGroupValue) {
-        def.cellRendererParams.innerRenderer = "GroupInnerRenderer";
+      def.cellRendererParams.innerRenderer = "GroupInnerRenderer";
+      def.cellRendererParams.innerRendererParams = {
+        getIcon: this.getIcon,
+        leafIconType: this.content?.treeLeafIcon,
+        leafIconSize: this.content?.treeLeafIconSize,
+        leafIconColor: this.content?.treeLeafIconColor,
+      };
+      if (this.content?.treeGroupColumnPadding) {
+        def.cellStyle = {
+          paddingLeft: this.content.treeGroupColumnPadding,
+          paddingRight: this.content.treeGroupColumnPadding,
+        };
       }
       if (this.content?.rowReorder) {
         def.rowDrag = true;
@@ -1492,6 +1502,12 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
+        // Tree column styling
+        "--ww-tree-chevron-color": this.content?.treeChevronColor,
+        "--ww-tree-chevron-size": this.content?.treeChevronSize,
+        "--ww-tree-drag-color": this.content?.treeDragHandleColor,
+        "--ww-tree-drag-size": this.content?.treeDragHandleSize,
+        "--ww-tree-drag-cursor": this.content?.treeDragHandleCursor,
       };
     },
     theme() {
@@ -1566,6 +1582,7 @@ export default {
           : "none",
         cellEditingShadow: "none",
         wrapperBorderRadius: 0,
+        rowGroupIndentSize: this.content?.treeGroupIndentSize,
         rowBorder: rowBorderParam,
         columnBorder: columnBorderParam,
         headerColumnBorder: headerColumnBorderParam,
@@ -2156,6 +2173,24 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
+  }
+
+  // Tree chevron icon styling
+  :deep(.ag-icon-tree-open),
+  :deep(.ag-icon-tree-closed) {
+    color: var(--ww-tree-chevron-color);
+    width: var(--ww-tree-chevron-size);
+    height: var(--ww-tree-chevron-size);
+  }
+
+  // Tree drag handle styling
+  :deep(.ag-drag-handle) {
+    color: var(--ww-tree-drag-color);
+    cursor: var(--ww-tree-drag-cursor, grab);
+  }
+  :deep(.ag-drag-handle .ag-icon) {
+    width: var(--ww-tree-drag-size);
+    height: var(--ww-tree-drag-size);
   }
 
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
