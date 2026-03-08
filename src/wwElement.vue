@@ -31,7 +31,6 @@
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
       :isRowValidDropPosition="isRowValidDropPosition"
-      :rowClassRules="rowClassRules"
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
@@ -734,19 +733,10 @@ export default {
 
     const highlightedParentId = ref(null);
 
-    const rowClassRules = computed(() => ({
-      'ww-drag-parent': (params) => {
-        return highlightedParentId.value != null && params.node.id === highlightedParentId.value;
-      },
-    }));
-
     const clearDragHighlight = () => {
       if (highlightedParentId.value != null) {
-        const node = gridApi.value?.getRowNode(highlightedParentId.value);
         highlightedParentId.value = null;
-        if (node) {
-          gridApi.value?.redrawRows({ rowNodes: [node] });
-        }
+        gridApi.value?.setRowDropPositionIndicator(null);
       }
     };
 
@@ -792,22 +782,40 @@ export default {
 
     const onRowDragMove = (event) => {
       const rowsDrop = event.rowsDrop;
-      const newParent = rowsDrop?.newParent;
-      const parentId = (newParent && newParent.level >= 0) ? newParent.id : null;
+      if (!rowsDrop) return;
+
+      // Compute the intended parent ourselves.
+      // We cannot rely on rowsDrop.newParent because AG Grid's clearNewSameParent()
+      // nulls it when the dragged row already belongs to that parent.
+      let parentNode = null;
+
+      if (rowsDrop.newParent && rowsDrop.newParent.level >= 0) {
+        // newParent available (first drag into a new parent)
+        parentNode = rowsDrop.newParent;
+      } else {
+        // newParent was nulled — compute from overNode + position
+        const overNode = event.overNode;
+        const position = rowsDrop.position;
+
+        if (overNode) {
+          if (position === 'inside' && overNode.level === 0) {
+            // Dragging into the middle of a root row → it becomes the parent
+            parentNode = overNode;
+          } else if (overNode.level > 0 && overNode.parent && overNode.parent.level >= 0) {
+            // Over a child row → parent is the child's parent
+            parentNode = overNode.parent;
+          }
+        }
+      }
+
+      const parentId = parentNode?.id ?? null;
 
       if (parentId !== highlightedParentId.value) {
-        const rowNodes = [];
-        if (highlightedParentId.value != null) {
-          const prevNode = event.api.getRowNode(highlightedParentId.value);
-          if (prevNode) rowNodes.push(prevNode);
-        }
-        if (parentId != null) {
-          const newNode = event.api.getRowNode(parentId);
-          if (newNode) rowNodes.push(newNode);
-        }
         highlightedParentId.value = parentId;
-        if (rowNodes.length) {
-          event.api.redrawRows({ rowNodes });
+        if (parentNode) {
+          event.api.setRowDropPositionIndicator({ row: parentNode, dropIndicatorPosition: 'inside' });
+        } else {
+          event.api.setRowDropPositionIndicator(null);
         }
       }
     };
@@ -955,7 +963,6 @@ export default {
       }),
       forcedPaginationPageSize,
       isRowValidDropPosition,
-      rowClassRules,
       onRowDragged,
       onRowDragEnter,
       onRowDragMove,
@@ -2145,8 +2152,8 @@ export default {
     border-bottom: var(--ag-row-border);
   }
 
-  // Drag & drop parent highlight
-  :deep(.ag-row.ww-drag-parent) {
+  // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
+  :deep(.ag-row.ag-row-highlight-inside) {
     background-color: rgba(33, 150, 243, 0.1) !important;
   }
 
