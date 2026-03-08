@@ -731,6 +731,8 @@ export default {
       return true;
     };
 
+    let highlightedParentId = null;
+
     const clearDragHighlight = () => {
       if (gridRoot.value) {
         gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
@@ -738,6 +740,7 @@ export default {
           el.removeAttribute('data-ww-highlight');
         });
       }
+      highlightedParentId = null;
     };
 
     const onRowDragged = (event) => {
@@ -782,18 +785,26 @@ export default {
 
     const onRowDragMove = (event) => {
       if (!gridRoot.value) return;
-      // Clear previous highlights
-      gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
-        el.style.removeProperty('background-color');
-        el.removeAttribute('data-ww-highlight');
-      });
-      // Highlight target for "inside" drops
       const rowsDrop = event.rowsDrop;
-      if (rowsDrop?.position === 'inside' && rowsDrop.target) {
-        const rowId = rowsDrop.target.id;
-        gridRoot.value.querySelectorAll(`.ag-row[row-id="${rowId}"]`).forEach((el) => {
-          el.style.setProperty('background-color', 'rgba(33, 150, 243, 0.1)', 'important');
-          el.setAttribute('data-ww-highlight', '');
+      const newParent = rowsDrop?.newParent;
+      const parentId = (newParent && newParent.level >= 0) ? newParent.id : null;
+
+      // Only do DOM work when the highlighted parent changes
+      if (parentId !== highlightedParentId) {
+        gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
+          el.style.removeProperty('background-color');
+          el.removeAttribute('data-ww-highlight');
+        });
+        highlightedParentId = parentId;
+      }
+
+      // Re-apply highlight (handles AG Grid row re-renders)
+      if (parentId != null) {
+        gridRoot.value.querySelectorAll(`.ag-row[row-id="${parentId}"]`).forEach((el) => {
+          if (!el.hasAttribute('data-ww-highlight')) {
+            el.style.setProperty('background-color', 'rgba(33, 150, 243, 0.1)', 'important');
+            el.setAttribute('data-ww-highlight', '');
+          }
         });
       }
     };
