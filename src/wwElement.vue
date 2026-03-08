@@ -31,6 +31,7 @@
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
       :isRowValidDropPosition="isRowValidDropPosition"
+      :getRowStyle="getRowStyle"
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
@@ -731,16 +732,20 @@ export default {
       return true;
     };
 
-    let highlightedParentId = null;
+    const highlightedParentId = ref(null);
+
+    const getRowStyle = (params) => {
+      if (highlightedParentId.value != null && params.node.id === highlightedParentId.value) {
+        return { backgroundColor: 'rgba(33, 150, 243, 0.1)' };
+      }
+      return undefined;
+    };
 
     const clearDragHighlight = () => {
-      if (gridRoot.value) {
-        gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
-          el.style.removeProperty('background-color');
-          el.removeAttribute('data-ww-highlight');
-        });
+      if (highlightedParentId.value != null) {
+        highlightedParentId.value = null;
+        gridApi.value?.redrawRows();
       }
-      highlightedParentId = null;
     };
 
     const onRowDragged = (event) => {
@@ -784,28 +789,13 @@ export default {
     };
 
     const onRowDragMove = (event) => {
-      if (!gridRoot.value) return;
       const rowsDrop = event.rowsDrop;
       const newParent = rowsDrop?.newParent;
       const parentId = (newParent && newParent.level >= 0) ? newParent.id : null;
 
-      // Only do DOM work when the highlighted parent changes
-      if (parentId !== highlightedParentId) {
-        gridRoot.value.querySelectorAll('.ag-row[data-ww-highlight]').forEach((el) => {
-          el.style.removeProperty('background-color');
-          el.removeAttribute('data-ww-highlight');
-        });
-        highlightedParentId = parentId;
-      }
-
-      // Re-apply highlight (handles AG Grid row re-renders)
-      if (parentId != null) {
-        gridRoot.value.querySelectorAll(`.ag-row[row-id="${parentId}"]`).forEach((el) => {
-          if (!el.hasAttribute('data-ww-highlight')) {
-            el.style.setProperty('background-color', 'rgba(33, 150, 243, 0.1)', 'important');
-            el.setAttribute('data-ww-highlight', '');
-          }
-        });
+      if (parentId !== highlightedParentId.value) {
+        highlightedParentId.value = parentId;
+        event.api.redrawRows();
       }
     };
 
@@ -952,6 +942,7 @@ export default {
       }),
       forcedPaginationPageSize,
       isRowValidDropPosition,
+      getRowStyle,
       onRowDragged,
       onRowDragEnter,
       onRowDragMove,
