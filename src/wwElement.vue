@@ -785,9 +785,21 @@ export default {
         gridRoot.value.appendChild(styleEl);
       }
       const rowsDrop = event.rowsDrop;
+      console.log('[drag-debug]', {
+        position: rowsDrop?.position,
+        targetId: rowsDrop?.target?.id,
+        targetRowIndex: rowsDrop?.target?.rowIndex,
+        allowed: rowsDrop?.allowed,
+        inside: rowsDrop?.inside,
+        newParentId: rowsDrop?.newParent?.id,
+      });
       if (rowsDrop?.position === 'inside' && rowsDrop.target) {
         const rowId = rowsDrop.target.id;
+        const rowEls = gridRoot.value.querySelectorAll('[row-id]');
+        const rowIds = Array.from(rowEls).map(el => el.getAttribute('row-id'));
+        console.log('[drag-debug] Setting highlight for row-id:', rowId, 'Available row-ids:', rowIds);
         styleEl.textContent = `.ag-row[row-id="${rowId}"] { background-color: color-mix(in srgb, var(--ag-range-selection-border-color, #2196f3) 10%, transparent) !important; }`;
+        console.log('[drag-debug] Style element content:', styleEl.textContent);
       } else {
         styleEl.textContent = '';
       }
