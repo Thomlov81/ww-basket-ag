@@ -140,6 +140,7 @@ export default {
           "treeGroupColumnWidth",
           "treeGroupColumnMinWidth",
           "treeGroupColumnPadding",
+          "treeGroupCellWidgetSpacing",
           "treeGroupIndentSize",
           "treeLeafIcon",
           "treeLeafIconSize",
@@ -208,7 +209,6 @@ export default {
         isCollapsible: true,
         properties: [
           "treeDataParentIdField",
-          "treeGroupColumnHeader",
           "treeGroupColumnField",
           "treeGroupDefaultExpanded",
           "treeShowChildCount",
@@ -2368,19 +2368,6 @@ export default {
       },
       /* wwEditor:end */
     },
-    treeGroupColumnHeader: {
-      label: { en: "Group Column Header" },
-      type: "Text",
-      section: "settings",
-      defaultValue: "Group",
-      bindable: true,
-      /* wwEditor:start */
-      bindingValidation: {
-        type: "string",
-        tooltip: "Header text for the auto-generated tree group column",
-      },
-      /* wwEditor:end */
-    },
     treeGroupColumnField: {
       label: { en: "Group Column Field" },
       type: "Text",
@@ -2501,6 +2488,24 @@ export default {
       options: {
         unitChoices: [{ value: "px", label: "px", min: 0, max: 80 }],
       },
+    },
+    treeGroupCellWidgetSpacing: {
+      label: { en: "Cell Widget Spacing" },
+      type: "Length",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 24 }],
+      },
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "string",
+        tooltip:
+          "Spacing between items (drag handle, chevron, content) in the group cell",
+      },
+      /* wwEditor:end */
     },
     treeGroupColumnPadding: {
       label: { en: "Group Column Padding" },

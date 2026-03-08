@@ -1100,7 +1100,7 @@ export default {
     },
     autoGroupColumnDef() {
       const def = {
-        headerName: this.content?.treeGroupColumnHeader || "Group",
+        headerName: "",
         minWidth: parseInt(this.content?.treeGroupColumnMinWidth) || 50,
         width: parseInt(this.content?.treeGroupColumnWidth) || undefined,
         cellRendererParams: {
@@ -1504,6 +1504,7 @@ export default {
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
         // Tree column styling
+        "--ag-cell-widget-spacing": this.content?.treeGroupCellWidgetSpacing,
         "--ww-tree-chevron-color": this.content?.treeChevronColor,
         "--ww-tree-chevron-size": this.content?.treeChevronSize,
         "--ww-tree-drag-color": this.content?.treeDragHandleColor,
