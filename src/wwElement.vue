@@ -32,8 +32,8 @@
       :row-drag-managed="!!content.rowReorder"
       :isRowValidDropPosition="isRowValidDropPosition"
       treeData
-      treeDataDisplayType="custom"
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
+      :autoGroupColumnDef="autoGroupColumnDef"
       :get-row-style="getRowStyle"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       :popupParent="popupParent"
@@ -1099,11 +1099,37 @@ export default {
       }
       return definition;
     },
+    autoGroupColumnDef() {
+      const treeGroupCol = (this.content?.columns || []).find(
+        (col) => col?.cellDataType === "treeGroup"
+      );
+      if (!treeGroupCol) return { hide: true };
+
+      return {
+        headerName: treeGroupCol.headerName || "Group",
+        field: treeGroupCol.field,
+        cellRenderer: "GroupCellRenderer",
+        cellRendererParams: {
+          containerId: treeGroupCol.containerId,
+          indentSize: this.content?.treeGroupIndentSize || "20px",
+          showDrag: !!this.content?.rowReorder,
+        },
+        width: treeGroupCol.width,
+        minWidth: treeGroupCol.minWidth,
+        maxWidth: treeGroupCol.maxWidth,
+        flex: treeGroupCol.flex,
+        sortable: treeGroupCol.sortable,
+        filter: treeGroupCol.filter,
+        pinned: treeGroupCol.pinned === "none" ? false : treeGroupCol.pinned,
+      };
+    },
     columnDefs() {
       if (!this.content?.columns) return [];
 
-      // Filter out null/undefined items
-      const allItems = this.content.columns.filter((item) => item != null);
+      // Filter out null/undefined and treeGroup items (treeGroup is handled via autoGroupColumnDef)
+      const allItems = this.content.columns.filter(
+        (item) => item != null && item.cellDataType !== "treeGroup"
+      );
       const breakpoint = this.content?.currentBreakpoint || "default";
       const overridesObj =
         this.columnOverridesForDefs &&

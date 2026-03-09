@@ -1,5 +1,5 @@
 <template>
-    <div class="group-cell-wrapper" :style="wrapperStyle">
+    <div class="group-cell-wrapper">
         <wwLayoutItemContext
             is-repeat
             :index="params.node.sourceRowIndex"
@@ -34,13 +34,6 @@ export default {
                 level: this.params?.node?.level ?? 0,
                 childCount: this.params?.node?.childrenAfterGroup?.length ?? 0,
                 nodeId: this.params?.node?.id,
-            };
-        },
-        wrapperStyle() {
-            const level = this.params?.node?.level ?? 0;
-            const indent = level * (parseInt(this.params?.indentSize) || 20);
-            return {
-                paddingLeft: `${indent}px`,
             };
         },
     },
