@@ -2014,7 +2014,9 @@ export default {
     columnDefs: {
       async handler() {
         // Create group cell container FIRST — independent of column binding
-        if (!this.wwEditorState.isACopy && !this.rawContent.treeGroupContainerId) {
+        // Use runtime flag to run exactly once per editor session
+        if (!this.wwEditorState.isACopy && !this._treeGroupContainerCreated) {
+          this._treeGroupContainerCreated = true;
           const id = await this.createElement("ww-flexbox", {
             _state: { name: "Tree Group Cell" },
           });
