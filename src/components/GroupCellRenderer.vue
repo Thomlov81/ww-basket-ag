@@ -45,10 +45,13 @@ export default {
     },
     beforeMount() {
         this.syncFromParams();
-        this.params?.node?.addEventListener(
-            "expandedChanged",
-            this.onExpandedChanged
-        );
+        const node = this.params?.node;
+        if (node) {
+            node.addEventListener("expandedChanged", this.onExpandedChanged);
+            node.addEventListener("allChildrenCountChanged", this.onNodeChanged);
+            node.addEventListener("dataChanged", this.onNodeChanged);
+            node.addEventListener("uiLevelChanged", this.onNodeChanged);
+        }
     },
     mounted() {
         if (this.params?.showDrag) {
@@ -57,10 +60,13 @@ export default {
         }
     },
     beforeUnmount() {
-        this.params?.node?.removeEventListener(
-            "expandedChanged",
-            this.onExpandedChanged
-        );
+        const node = this.params?.node;
+        if (node) {
+            node.removeEventListener("expandedChanged", this.onExpandedChanged);
+            node.removeEventListener("allChildrenCountChanged", this.onNodeChanged);
+            node.removeEventListener("dataChanged", this.onNodeChanged);
+            node.removeEventListener("uiLevelChanged", this.onNodeChanged);
+        }
     },
     methods: {
         syncFromParams() {
@@ -78,6 +84,9 @@ export default {
         },
         onExpandedChanged() {
             this.expanded = this.params?.node?.expanded ?? false;
+        },
+        onNodeChanged() {
+            this.syncFromParams();
         },
     },
 };
