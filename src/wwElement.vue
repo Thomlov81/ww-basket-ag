@@ -910,20 +910,6 @@ export default {
     );
 
     /* wwEditor:start */
-    // Auto-create group cell container if not set
-    watch(
-      () => props.content?.treeGroupContainerId,
-      async (newVal) => {
-        if (!newVal && !props.wwEditorState?.isACopy) {
-          const id = await createElement("ww-flexbox", {
-            _state: { name: "Tree Group Cell" },
-          });
-          ctx.emit("update:content:effect", { treeGroupContainerId: id });
-        }
-      },
-      { immediate: true }
-    );
-
     watch(
       () => [
         props.content?.dynamicHeaderBackgroundColor,
@@ -2031,6 +2017,14 @@ export default {
         this.gridApi?.resetColumnState();
 
         if (this.wwEditorState.isACopy) return;
+
+        // Create group cell container if needed
+        if (!this.rawContent.treeGroupContainerId) {
+          const id = await this.createElement("ww-flexbox", {
+            _state: { name: "Tree Group Cell" },
+          });
+          this.$emit("update:content:effect", { treeGroupContainerId: id });
+        }
 
         // We assume there will only be one custom column each time
         const columnIndex = (this.rawContent.columns || []).findIndex(
