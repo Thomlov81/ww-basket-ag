@@ -32,8 +32,8 @@
       :row-drag-managed="!!content.rowReorder"
       :isRowValidDropPosition="isRowValidDropPosition"
       treeData
+      treeDataDisplayType="custom"
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
-      :autoGroupColumnDef="autoGroupColumnDef"
       :get-row-style="getRowStyle"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       :popupParent="popupParent"
@@ -563,8 +563,6 @@ export default {
 
     const onGridReady = (params) => {
       gridApi.value = params.api;
-      // Hide the native auto group column — tree display is handled by the treeGroup column type
-      params.api.setColumnsVisible(['ag-Grid-AutoColumn'], false);
       const columns = params.api.getAllGridColumns();
       setColumnOrder(columns.map((col) => col.getColId()));
 
@@ -1100,10 +1098,6 @@ export default {
         definition.headerStyle = {};
       }
       return definition;
-    },
-    autoGroupColumnDef() {
-      // Hide the native auto group column — tree display is handled by the treeGroup column type
-      return { hide: true };
     },
     columnDefs() {
       if (!this.content?.columns) return [];
