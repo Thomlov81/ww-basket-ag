@@ -1100,41 +1100,8 @@ export default {
       return definition;
     },
     autoGroupColumnDef() {
-      const def = {
-        headerName: "",
-        minWidth: parseInt(this.content?.treeGroupColumnMinWidth) || 50,
-        width: parseInt(this.content?.treeGroupColumnWidth) || undefined,
-        cellRenderer: "GroupCellRenderer",
-        cellRendererParams: {
-          containerId: this.content?.treeGroupContainerId,
-          indentSize: this.content?.treeGroupIndentSize || "20px",
-          showDrag: !!this.content?.rowReorder,
-        },
-      };
-      if (this.content?.treeGroupColumnField) {
-        def.field = this.content.treeGroupColumnField;
-      }
-      // Merge padding + editable background on group column cells
-      const groupPadding = this.content?.treeGroupColumnPadding;
-      const editableBg = this.content?.editableCellBackgroundColor;
-      const editableCursor = this.content?.editableCellCursor;
-      if (groupPadding || editableBg || editableCursor) {
-        def.cellStyle = () => {
-          const style = {};
-          if (groupPadding) {
-            style.paddingLeft = groupPadding;
-            style.paddingRight = groupPadding;
-          }
-          if (editableBg) style.backgroundColor = editableBg;
-          if (editableCursor) style.cursor = editableCursor;
-          return Object.keys(style).length > 0 ? style : null;
-        };
-      }
-      if (editableBg) {
-        def.cellClass = "ww-cell-editable";
-      }
-      // Do NOT set rowDrag: true — registerRowDragger handles it in GroupCellRenderer
-      return def;
+      // Hide the native auto group column — tree display is handled by the treeGroup column type
+      return { hide: true };
     },
     columnDefs() {
       if (!this.content?.columns) return [];
@@ -1323,6 +1290,20 @@ export default {
             }
             return infoResult;
           }
+          case "treeGroup":
+            return {
+              ...commonProperties,
+              headerName: effectiveHeaderName,
+              field: col?.field,
+              cellRenderer: "GroupCellRenderer",
+              cellRendererParams: {
+                containerId: col?.containerId,
+                indentSize: this.content?.treeGroupIndentSize || "20px",
+                showDrag: !!this.content?.rowReorder,
+              },
+              sortable: col?.sortable,
+              filter: col?.filter,
+            };
           default: {
             const result = {
               ...commonProperties,
@@ -2013,16 +1994,6 @@ export default {
     /* wwEditor:start */
     columnDefs: {
       async handler() {
-        // Create group cell container FIRST — independent of column binding
-        // Use runtime flag to run exactly once per editor session
-        if (!this.wwEditorState.isACopy && !this._treeGroupContainerCreated) {
-          this._treeGroupContainerCreated = true;
-          const id = await this.createElement("ww-flexbox", {
-            _state: { name: "Tree Group Cell" },
-          });
-          this.$emit("update:content:effect", { treeGroupContainerId: id });
-        }
-
         if (this.wwEditorState?.boundProps?.columns) return;
         this.gridApi?.resetColumnState();
 
@@ -2030,7 +2001,7 @@ export default {
 
         // We assume there will only be one custom column each time
         const columnIndex = (this.rawContent.columns || []).findIndex(
-          (col) => (col?.cellDataType === "custom" || col?.cellDataType === "search" || col?.cellDataType === "info") && !col?.containerId
+          (col) => (col?.cellDataType === "custom" || col?.cellDataType === "search" || col?.cellDataType === "info" || col?.cellDataType === "treeGroup") && !col?.containerId
         );
         if (columnIndex === -1) return;
         const newColumns = [...this.rawContent.columns];

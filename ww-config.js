@@ -1580,6 +1580,7 @@ export default {
                     { value: "custom", label: "Custom" },
                     { value: "search", label: "Search" },
                     { value: "info", label: "Info" },
+                    { value: "treeGroup", label: "Tree Group" },
                   ],
                 },
               },
@@ -2356,10 +2357,6 @@ export default {
         type: "string",
         cssSupports: "border-radius",
       },
-    },
-    treeGroupContainerId: {
-      hidden: true,
-      defaultValue: null,
     },
     treeDataParentIdField: {
       label: { en: "Parent ID Field" },
