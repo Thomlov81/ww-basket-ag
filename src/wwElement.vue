@@ -2013,18 +2013,18 @@ export default {
     /* wwEditor:start */
     columnDefs: {
       async handler() {
-        if (this.wwEditorState?.boundProps?.columns) return;
-        this.gridApi?.resetColumnState();
-
-        if (this.wwEditorState.isACopy) return;
-
-        // Create group cell container if needed
-        if (!this.rawContent.treeGroupContainerId) {
+        // Create group cell container FIRST — independent of column binding
+        if (!this.wwEditorState.isACopy && !this.rawContent.treeGroupContainerId) {
           const id = await this.createElement("ww-flexbox", {
             _state: { name: "Tree Group Cell" },
           });
           this.$emit("update:content:effect", { treeGroupContainerId: id });
         }
+
+        if (this.wwEditorState?.boundProps?.columns) return;
+        this.gridApi?.resetColumnState();
+
+        if (this.wwEditorState.isACopy) return;
 
         // We assume there will only be one custom column each time
         const columnIndex = (this.rawContent.columns || []).findIndex(
