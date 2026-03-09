@@ -22,23 +22,29 @@ export default {
     data() {
         return {
             expanded: false,
+            currentValue: undefined,
+            currentData: null,
+            currentIsGroup: false,
+            currentLevel: 0,
+            currentChildCount: 0,
+            currentNodeId: null,
         };
     },
     computed: {
         contextData() {
             return {
-                value: this.params?.value,
-                row: this.params?.data,
-                isGroup: this.params?.node?.group ?? false,
+                value: this.currentValue,
+                row: this.currentData,
+                isGroup: this.currentIsGroup,
                 isExpanded: this.expanded,
-                level: this.params?.node?.level ?? 0,
-                childCount: this.params?.node?.childrenAfterGroup?.length ?? 0,
-                nodeId: this.params?.node?.id,
+                level: this.currentLevel,
+                childCount: this.currentChildCount,
+                nodeId: this.currentNodeId,
             };
         },
     },
     beforeMount() {
-        this.expanded = this.params?.node?.expanded ?? false;
+        this.syncFromParams();
         this.params?.node?.addEventListener(
             "expandedChanged",
             this.onExpandedChanged
@@ -57,6 +63,19 @@ export default {
         );
     },
     methods: {
+        syncFromParams() {
+            this.expanded = this.params?.node?.expanded ?? false;
+            this.currentValue = this.params?.value;
+            this.currentData = this.params?.data;
+            this.currentIsGroup = this.params?.node?.group ?? false;
+            this.currentLevel = this.params?.node?.level ?? 0;
+            this.currentChildCount = this.params?.node?.childrenAfterGroup?.length ?? 0;
+            this.currentNodeId = this.params?.node?.id;
+        },
+        refresh() {
+            this.syncFromParams();
+            return true;
+        },
         onExpandedChanged() {
             this.expanded = this.params?.node?.expanded ?? false;
         },
