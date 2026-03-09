@@ -1133,6 +1133,9 @@ export default {
         sortable: treeGroupCol.sortable,
         filter: treeGroupCol.filter,
         pinned: treeGroupCol.pinned === "none" ? false : treeGroupCol.pinned,
+        cellStyle: this.content?.editableCellBackgroundColor
+          ? { backgroundColor: this.content.editableCellBackgroundColor }
+          : null,
       };
     },
     columnDefs() {
