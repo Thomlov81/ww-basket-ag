@@ -1105,8 +1105,20 @@ export default {
       );
       if (!treeGroupCol) return { hide: true };
 
+      const headerName = treeGroupCol.showHeader === false ? '' : (treeGroupCol.headerName || "Group");
+      const minWidth = !treeGroupCol.minWidth || treeGroupCol.minWidth === "auto"
+        ? null
+        : wwLib.wwUtils.getLengthUnit(treeGroupCol.minWidth)?.[0];
+      const maxWidth = !treeGroupCol.maxWidth || treeGroupCol.maxWidth === "auto"
+        ? null
+        : wwLib.wwUtils.getLengthUnit(treeGroupCol.maxWidth)?.[0];
+      const width = !treeGroupCol.width || treeGroupCol.width === "auto" || treeGroupCol.widthAlgo === "flex"
+        ? null
+        : wwLib.wwUtils.getLengthUnit(treeGroupCol.width)?.[0];
+      const flex = treeGroupCol.widthAlgo === "flex" ? treeGroupCol.flex ?? 1 : null;
+
       return {
-        headerName: treeGroupCol.headerName || "Group",
+        headerName,
         field: treeGroupCol.field,
         cellRenderer: "GroupCellRenderer",
         cellRendererParams: {
@@ -1114,10 +1126,10 @@ export default {
           indentSize: this.content?.treeGroupIndentSize || "20px",
           showDrag: !!this.content?.rowReorder,
         },
-        width: treeGroupCol.width,
-        minWidth: treeGroupCol.minWidth,
-        maxWidth: treeGroupCol.maxWidth,
-        flex: treeGroupCol.flex,
+        width,
+        minWidth,
+        maxWidth,
+        flex,
         sortable: treeGroupCol.sortable,
         filter: treeGroupCol.filter,
         pinned: treeGroupCol.pinned === "none" ? false : treeGroupCol.pinned,
