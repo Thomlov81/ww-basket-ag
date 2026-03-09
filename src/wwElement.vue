@@ -563,6 +563,8 @@ export default {
 
     const onGridReady = (params) => {
       gridApi.value = params.api;
+      // Hide the native auto group column — tree display is handled by the treeGroup column type
+      params.api.setColumnsVisible(['ag-Grid-AutoColumn'], false);
       const columns = params.api.getAllGridColumns();
       setColumnOrder(columns.map((col) => col.getColId()));
 
