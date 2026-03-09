@@ -140,18 +140,7 @@ export default {
           "treeGroupColumnWidth",
           "treeGroupColumnMinWidth",
           "treeGroupColumnPadding",
-          "treeGroupCellWidgetSpacing",
           "treeGroupIndentSize",
-          "treeLeafIcon",
-          "treeLeafIconSize",
-          "treeLeafIconColor",
-          "treeChevronColor",
-          "treeChevronSize",
-          "treeChevronHoverColor",
-          "treeChevronHoverPadding",
-          "treeDragHandleColor",
-          "treeDragHandleSize",
-          "treeDragHandleCursor",
           "treeChildRowBackgroundColor",
         ],
       },
@@ -395,6 +384,16 @@ export default {
     {
       label: "Stop search editing",
       action: "stopSearchEditing",
+    },
+    {
+      label: "Toggle Expand",
+      action: "toggleExpand",
+      args: [
+        {
+          name: "nodeId",
+          type: "string",
+        },
+      ],
     },
   ],
   properties: {
@@ -2357,6 +2356,10 @@ export default {
         type: "string",
         cssSupports: "border-radius",
       },
+    },
+    treeGroupContainerId: {
+      hidden: true,
+      defaultValue: null,
     },
     treeDataParentIdField: {
       label: { en: "Parent ID Field" },

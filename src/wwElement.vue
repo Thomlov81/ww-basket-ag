@@ -105,7 +105,7 @@ import WewebCellRenderer from "./components/WewebCellRenderer.vue";
 import SearchCellRenderer from "./components/SearchCellRenderer.vue";
 import SearchCellEditor from "./components/SearchCellEditor.vue";
 import InfoCellRenderer from "./components/InfoCellRenderer.vue";
-import GroupInnerRenderer from "./components/GroupInnerRenderer.vue";
+import GroupCellRenderer from "./components/GroupCellRenderer.vue";
 
 LicenseManager.setLicenseKey("[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-122239}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{1 April 2026}____[v3]_[0102]_MTc3NDk5ODAwMDAwMA==4517e38208f4ebcaa34ad17de4a324a1");
 
@@ -120,7 +120,7 @@ export default {
     SearchCellRenderer,
     SearchCellEditor,
     InfoCellRenderer,
-    GroupInnerRenderer,
+    GroupCellRenderer,
   },
   props: {
     content: {
@@ -910,6 +910,20 @@ export default {
     );
 
     /* wwEditor:start */
+    // Auto-create group cell container if not set
+    watch(
+      () => props.content?.treeGroupContainerId,
+      async (newVal) => {
+        if (!newVal && !props.wwEditorState?.isACopy) {
+          const id = await createElement("ww-flexbox", {
+            _state: { name: "Tree Group Cell" },
+          });
+          ctx.emit("update:content:effect", { treeGroupContainerId: id });
+        }
+      },
+      { immediate: true }
+    );
+
     watch(
       () => [
         props.content?.dynamicHeaderBackgroundColor,
@@ -1104,20 +1118,16 @@ export default {
         headerName: "",
         minWidth: parseInt(this.content?.treeGroupColumnMinWidth) || 50,
         width: parseInt(this.content?.treeGroupColumnWidth) || undefined,
+        cellRenderer: "GroupCellRenderer",
         cellRendererParams: {
-          suppressCount: !this.content?.treeShowChildCount,
+          containerId: this.content?.treeGroupContainerId,
+          indentSize: this.content?.treeGroupIndentSize || "20px",
+          showDrag: !!this.content?.rowReorder,
         },
       };
       if (this.content?.treeGroupColumnField) {
         def.field = this.content.treeGroupColumnField;
       }
-      def.cellRendererParams.innerRenderer = "GroupInnerRenderer";
-      def.cellRendererParams.innerRendererParams = {
-        getIcon: this.getIcon,
-        leafIconType: this.content?.treeLeafIcon,
-        leafIconSize: this.content?.treeLeafIconSize,
-        leafIconColor: this.content?.treeLeafIconColor,
-      };
       // Merge padding + editable background on group column cells
       const groupPadding = this.content?.treeGroupColumnPadding;
       const editableBg = this.content?.editableCellBackgroundColor;
@@ -1137,9 +1147,7 @@ export default {
       if (editableBg) {
         def.cellClass = "ww-cell-editable";
       }
-      if (this.content?.rowReorder) {
-        def.rowDrag = true;
-      }
+      // Do NOT set rowDrag: true — registerRowDragger handles it in GroupCellRenderer
       return def;
     },
     columnDefs() {
@@ -1517,15 +1525,7 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
-        // Tree column styling
-        "--ag-cell-widget-spacing": this.content?.treeGroupCellWidgetSpacing,
-        "--ww-tree-chevron-color": this.content?.treeChevronColor,
-        "--ww-tree-chevron-size": this.content?.treeChevronSize,
-        "--ww-tree-chevron-hover-color": this.content?.treeChevronHoverColor,
-        "--ww-tree-chevron-hover-padding": this.content?.treeChevronHoverPadding,
-        "--ww-tree-drag-color": this.content?.treeDragHandleColor,
-        "--ww-tree-drag-size": this.content?.treeDragHandleSize,
-        "--ww-tree-drag-cursor": this.content?.treeDragHandleCursor,
+        // Tree column styling (no longer needed — handled by custom GroupCellRenderer)
       };
     },
     theme() {
@@ -1640,6 +1640,11 @@ export default {
         return { backgroundColor: this.content.treeChildRowBackgroundColor };
       }
       return null;
+    },
+    toggleExpand(nodeId) {
+      if (!this.gridApi) return;
+      const node = this.gridApi.getRowNode(nodeId);
+      if (node) node.setExpanded(!node.expanded);
     },
     setupContainerObserver() {
       if (this.content?.layout !== "fill") return;
@@ -2197,51 +2202,6 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
-  }
-
-  // Tree group cell: vertically center all items (AG Grid defaults to flex-start)
-  :deep(.ag-cell-wrapper.ag-row-group) {
-    align-items: center;
-  }
-
-  // AG Grid excludes .ag-group-value from its centering rule — add flex centering
-  :deep(.ag-group-value) {
-    display: flex;
-    align-items: center;
-  }
-
-  // Remove AG Grid's built-in leaf indent so leaf icon aligns with the chevron position
-  :deep(.ag-row-group-leaf-indent) {
-    margin-left: 0;
-  }
-
-  // Tree chevron icon styling (font-based icons: need font-size + line-height + width + height)
-  :deep(.ag-icon-tree-open),
-  :deep(.ag-icon-tree-closed) {
-    color: var(--ww-tree-chevron-color, var(--ag-icon-font-color));
-    font-size: var(--ww-tree-chevron-size, var(--ag-icon-size));
-    line-height: var(--ww-tree-chevron-size, var(--ag-icon-size));
-    width: var(--ww-tree-chevron-size, var(--ag-icon-size));
-    height: var(--ww-tree-chevron-size, var(--ag-icon-size));
-  }
-
-  // Chevron hover background box (overrides quartz theme's built-in box-shadow hover)
-  :deep(.ag-group-expanded .ag-icon:hover),
-  :deep(.ag-group-contracted .ag-icon:hover) {
-    background-color: var(--ww-tree-chevron-hover-color, var(--ag-quartz-icon-hover-color));
-    box-shadow: 0 0 0 var(--ww-tree-chevron-hover-padding, 4px) var(--ww-tree-chevron-hover-color, var(--ag-quartz-icon-hover-color));
-  }
-
-  // Tree drag handle styling
-  :deep(.ag-drag-handle) {
-    cursor: var(--ww-tree-drag-cursor, grab);
-  }
-  :deep(.ag-icon-grip) {
-    color: var(--ww-tree-drag-color, var(--ag-icon-font-color));
-    font-size: var(--ww-tree-drag-size, var(--ag-icon-size));
-    line-height: var(--ww-tree-drag-size, var(--ag-icon-size));
-    width: var(--ww-tree-drag-size, var(--ag-icon-size));
-    height: var(--ww-tree-drag-size, var(--ag-icon-size));
   }
 
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
