@@ -818,7 +818,7 @@ export default {
         if (parentNode) {
           event.api.setRowDropPositionIndicator({ row: parentNode, dropIndicatorPosition: 'inside' });
           setTimeout(() => {
-            event.api.refreshCells({ rowNodes: [parentNode], force: true });
+            event.api.redrawRows({ rowNodes: [parentNode] });
           }, 0);
         } else {
           event.api.setRowDropPositionIndicator(null);
