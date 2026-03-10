@@ -736,6 +736,7 @@ export default {
     const highlightedParentId = ref(null);
 
     const clearDragHighlight = () => {
+      gridRoot.value?.classList.remove('ww-row-dragging');
       if (highlightedParentId.value != null) {
         highlightedParentId.value = null;
         gridApi.value?.setRowDropPositionIndicator(null);
@@ -776,6 +777,7 @@ export default {
     };
 
     const onRowDragEnter = (event) => {
+      gridRoot.value?.classList.add('ww-row-dragging');
       ctx.emit("trigger-event", {
         name: "rowDragStart",
         event: { row: event.node.data, id: event.node.id },
@@ -1054,7 +1056,8 @@ export default {
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer";
+                params.colDef?.cellRenderer === "WewebCellRenderer" ||
+                params.colDef?.cellRenderer === "GroupCellRenderer";
 
           const bgClass = isEditable
             ? "ww-cell-editable"
@@ -1078,7 +1081,8 @@ export default {
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer";
+                params.colDef?.cellRenderer === "WewebCellRenderer" ||
+                params.colDef?.cellRenderer === "GroupCellRenderer";
           const style = {};
           if (isEditable) {
             if (editableBg) style.backgroundColor = editableBg;
@@ -1132,9 +1136,6 @@ export default {
         sortable: treeGroupCol.sortable,
         filter: treeGroupCol.filter,
         pinned: treeGroupCol.pinned === "none" ? false : treeGroupCol.pinned,
-        cellStyle: this.content?.editableCellBackgroundColor
-          ? { backgroundColor: this.content.editableCellBackgroundColor }
-          : null,
       };
     },
     columnDefs() {
@@ -2210,6 +2211,12 @@ export default {
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
   :deep(.ag-row.ag-row-highlight-inside) {
     background-color: rgba(33, 150, 243, 0.1) !important;
+  }
+
+  // During row drag, disable pointer-events on all drag handle icons so they
+  // don't interfere with AG Grid's pointer capture and cause the ghost to freeze.
+  &.ww-row-dragging :deep(.ww-drag-handle) {
+    pointer-events: none;
   }
 
   // Extend hover/selection overlays 1px above the row to close
