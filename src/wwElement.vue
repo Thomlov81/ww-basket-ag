@@ -746,10 +746,8 @@ export default {
 
     const clearDragHighlight = () => {
       gridRoot.value?.classList.remove('ww-row-dragging');
-      // Restore touch-action on drag handles (JS fallback for inline style override)
-      gridRoot.value?.querySelectorAll('.ww-drag-handle').forEach(el => {
-        el.style.touchAction = 'none';
-      });
+      // Clean up manual ghost positioning
+      gridRoot.value?.__ghostMoveCleanup?.();
       // DIAGNOSTIC: remove after debugging
       gridRoot.value?.__diagCleanup?.();
       if (highlightedParentId.value != null) {
@@ -793,28 +791,42 @@ export default {
 
     const onRowDragEnter = (event) => {
       gridRoot.value?.classList.add('ww-row-dragging');
-      // Override inline touch-action:none on drag handles to prevent
-      // Chrome compositor interference with AG Grid's pointer capture
-      gridRoot.value?.querySelectorAll('.ww-drag-handle').forEach(el => {
-        el.style.touchAction = 'auto';
-      });
 
-      // DIAGNOSTIC: remove after debugging — logs pointer capture state during drag
-      const agRoot = gridRoot.value?.querySelector('.ag-root-wrapper');
-      if (agRoot) {
-        const onLost = (e) => console.warn('[DIAG] lostpointercapture!', e.pointerId);
-        agRoot.addEventListener('lostpointercapture', onLost);
-        let n = 0;
-        const onMove = (e) => {
-          if (++n % 10 === 0)
-            console.log('[DIAG] pointermove', n, e.clientX, e.clientY, agRoot.hasPointerCapture?.(e.pointerId));
-        };
-        document.addEventListener('pointermove', onMove);
-        gridRoot.value.__diagCleanup = () => {
-          agRoot.removeEventListener('lostpointercapture', onLost);
-          document.removeEventListener('pointermove', onMove);
-        };
-      }
+      // Manual ghost positioning: AG Grid's internal ghost positioning fails when
+      // the cursor is directly over other rows' drag handles. We bypass it by
+      // positioning the .ag-dnd-ghost element ourselves on every mouse/pointer move.
+      const onMouseMove = (e) => {
+        const ghost = document.querySelector('.ag-dnd-ghost');
+        if (!ghost) return;
+        const offsetParent = ghost.offsetParent;
+        if (!offsetParent) return;
+        const rect = offsetParent.getBoundingClientRect();
+        ghost.style.top = `${e.clientY - rect.top - ghost.offsetHeight / 2}px`;
+        ghost.style.left = `${e.clientX - rect.left - 10}px`;
+      };
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('pointermove', onMouseMove);
+      gridRoot.value.__ghostMoveCleanup = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('pointermove', onMouseMove);
+      };
+
+      // DIAGNOSTIC: remove after debugging — monitors ghost element position
+      let lastGhostTop = null;
+      const diagMove = (e) => {
+        const ghost = document.querySelector('.ag-dnd-ghost');
+        if (ghost) {
+          const newTop = ghost.style.top;
+          if (newTop !== lastGhostTop) {
+            console.log('[DIAG] ghost moved:', ghost.style.top, ghost.style.left, 'cursor:', e.clientX, e.clientY);
+            lastGhostTop = newTop;
+          }
+        }
+      };
+      document.addEventListener('mousemove', diagMove);
+      gridRoot.value.__diagCleanup = () => {
+        document.removeEventListener('mousemove', diagMove);
+      };
 
       ctx.emit("trigger-event", {
         name: "rowDragStart",
