@@ -817,9 +817,6 @@ export default {
         highlightedParentId.value = parentId;
         if (parentNode) {
           event.api.setRowDropPositionIndicator({ row: parentNode, dropIndicatorPosition: 'inside' });
-          setTimeout(() => {
-            event.api.redrawRows({ rowNodes: [parentNode] });
-          }, 0);
         } else {
           event.api.setRowDropPositionIndicator(null);
         }
