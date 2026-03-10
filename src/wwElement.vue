@@ -613,6 +613,15 @@ export default {
       nextTick(() => requestAnimationFrame(measureGridHeight));
       setTimeout(measureGridHeight, 200);
 
+      // Prevent native browser drag on SVG elements inside the grid.
+      // Chrome can initiate native DnD on SVGs, which conflicts with AG Grid's
+      // custom pointer-capture-based drag system.
+      gridRoot.value?.addEventListener('dragstart', (e) => {
+        if (e.target instanceof SVGElement || e.target?.closest?.('svg')) {
+          e.preventDefault();
+        }
+      });
+
       // With suppressCellFocus, AG Grid won't auto-close editors when clicking
       // another cell. Use mousedown (fires before AG Grid's click handling) to
       // close any open editor when clicking outside the editing cell.
@@ -737,6 +746,12 @@ export default {
 
     const clearDragHighlight = () => {
       gridRoot.value?.classList.remove('ww-row-dragging');
+      // Restore touch-action on drag handles (JS fallback for inline style override)
+      gridRoot.value?.querySelectorAll('.ww-drag-handle').forEach(el => {
+        el.style.touchAction = 'none';
+      });
+      // DIAGNOSTIC: remove after debugging
+      gridRoot.value?.__diagCleanup?.();
       if (highlightedParentId.value != null) {
         highlightedParentId.value = null;
         gridApi.value?.setRowDropPositionIndicator(null);
@@ -778,6 +793,29 @@ export default {
 
     const onRowDragEnter = (event) => {
       gridRoot.value?.classList.add('ww-row-dragging');
+      // Override inline touch-action:none on drag handles to prevent
+      // Chrome compositor interference with AG Grid's pointer capture
+      gridRoot.value?.querySelectorAll('.ww-drag-handle').forEach(el => {
+        el.style.touchAction = 'auto';
+      });
+
+      // DIAGNOSTIC: remove after debugging — logs pointer capture state during drag
+      const agRoot = gridRoot.value?.querySelector('.ag-root-wrapper');
+      if (agRoot) {
+        const onLost = (e) => console.warn('[DIAG] lostpointercapture!', e.pointerId);
+        agRoot.addEventListener('lostpointercapture', onLost);
+        let n = 0;
+        const onMove = (e) => {
+          if (++n % 10 === 0)
+            console.log('[DIAG] pointermove', n, e.clientX, e.clientY, agRoot.hasPointerCapture?.(e.pointerId));
+        };
+        document.addEventListener('pointermove', onMove);
+        gridRoot.value.__diagCleanup = () => {
+          agRoot.removeEventListener('lostpointercapture', onLost);
+          document.removeEventListener('pointermove', onMove);
+        };
+      }
+
       ctx.emit("trigger-event", {
         name: "rowDragStart",
         event: { row: event.node.data, id: event.node.id },
@@ -1058,6 +1096,19 @@ export default {
               : !!params.colDef?.editable ||
                 params.colDef?.cellRenderer === "WewebCellRenderer" ||
                 params.colDef?.cellRenderer === "GroupCellRenderer";
+
+          // Only add class when cell will actually get a background from cellStyle.
+          // Without a background the row's ::before hover already provides the overlay;
+          // adding the class would trigger ::after too, causing a double-strength hover.
+          const hasBg = isEditable ? !!editableBg : !!nonEditableBg;
+          if (!hasBg) {
+            if (existingCellClass) {
+              return typeof existingCellClass === "function"
+                ? existingCellClass(params)
+                : existingCellClass;
+            }
+            return null;
+          }
 
           const bgClass = isEditable
             ? "ww-cell-editable"
@@ -2213,10 +2264,14 @@ export default {
     background-color: rgba(33, 150, 243, 0.1) !important;
   }
 
-  // During row drag, disable pointer-events on all drag handle icons so they
-  // don't interfere with AG Grid's pointer capture and cause the ghost to freeze.
-  &.ww-row-dragging :deep(.ww-drag-handle) {
-    pointer-events: none;
+  // During row drag, neutralize drag handles and their parent weweb wrappers
+  // to prevent pointer capture disruption from touch-action:none zones.
+  &.ww-row-dragging {
+    :deep(.ww-drag-handle),
+    :deep(.group-cell-content) {
+      pointer-events: none !important;
+      touch-action: auto !important;
+    }
   }
 
   // Extend hover/selection overlays 1px above the row to close
