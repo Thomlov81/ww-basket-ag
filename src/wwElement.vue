@@ -34,7 +34,6 @@
       treeData
       :treeDataParentIdField="content.treeDataParentIdField || 'parentId'"
       :autoGroupColumnDef="autoGroupColumnDef"
-      :get-row-style="getRowStyle"
       :groupDefaultExpanded="content.treeGroupDefaultExpanded ?? -1"
       :popupParent="popupParent"
 
@@ -1529,7 +1528,8 @@ export default {
         "--ww-cell-editing-border-color": this.content?.cellEditingBorderColor,
         "--ww-cell-editing-border-width": this.content?.cellEditingBorderWidth || "2px",
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
-        // Tree column styling (no longer needed — handled by custom GroupCellRenderer)
+        // Tree child row background
+        "--ww-tree-child-row-bg": this.content?.treeChildRowBackgroundColor,
       };
     },
     theme() {
@@ -1639,12 +1639,6 @@ export default {
     },
   },
   methods: {
-    getRowStyle(params) {
-      if ((params.node?.level ?? 0) > 0 && this.content?.treeChildRowBackgroundColor) {
-        return { backgroundColor: this.content.treeChildRowBackgroundColor };
-      }
-      return null;
-    },
     toggleExpand(nodeId) {
       if (!this.gridApi) return;
       const node = this.gridApi.getRowNode(nodeId);
@@ -2206,6 +2200,11 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
+  }
+
+  // Tree child row background (non-root rows only)
+  :deep(.ag-row:not(.ag-row-level-0)) {
+    background-color: var(--ww-tree-child-row-bg);
   }
 
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
