@@ -613,15 +613,6 @@ export default {
       nextTick(() => requestAnimationFrame(measureGridHeight));
       setTimeout(measureGridHeight, 200);
 
-      // Prevent native browser drag on SVG elements inside the grid.
-      // Chrome can initiate native DnD on SVGs, which conflicts with AG Grid's
-      // custom pointer-capture-based drag system.
-      gridRoot.value?.addEventListener('dragstart', (e) => {
-        if (e.target instanceof SVGElement || e.target?.closest?.('svg')) {
-          e.preventDefault();
-        }
-      });
-
       // With suppressCellFocus, AG Grid won't auto-close editors when clicking
       // another cell. Use mousedown (fires before AG Grid's click handling) to
       // close any open editor when clicking outside the editing cell.
@@ -745,11 +736,6 @@ export default {
     const highlightedParentId = ref(null);
 
     const clearDragHighlight = () => {
-      gridRoot.value?.classList.remove('ww-row-dragging');
-      // Clean up manual ghost positioning
-      gridRoot.value?.__ghostMoveCleanup?.();
-      // DIAGNOSTIC: remove after debugging
-      gridRoot.value?.__diagCleanup?.();
       if (highlightedParentId.value != null) {
         highlightedParentId.value = null;
         gridApi.value?.setRowDropPositionIndicator(null);
@@ -790,44 +776,6 @@ export default {
     };
 
     const onRowDragEnter = (event) => {
-      gridRoot.value?.classList.add('ww-row-dragging');
-
-      // Manual ghost positioning: AG Grid's internal ghost positioning fails when
-      // the cursor is directly over other rows' drag handles. We bypass it by
-      // positioning the .ag-dnd-ghost element ourselves on every mouse/pointer move.
-      const onMouseMove = (e) => {
-        const ghost = document.querySelector('.ag-dnd-ghost');
-        if (!ghost) return;
-        const offsetParent = ghost.offsetParent;
-        if (!offsetParent) return;
-        const rect = offsetParent.getBoundingClientRect();
-        ghost.style.top = `${e.clientY - rect.top - ghost.offsetHeight / 2}px`;
-        ghost.style.left = `${e.clientX - rect.left - 10}px`;
-      };
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('pointermove', onMouseMove);
-      gridRoot.value.__ghostMoveCleanup = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('pointermove', onMouseMove);
-      };
-
-      // DIAGNOSTIC: remove after debugging — monitors ghost element position
-      let lastGhostTop = null;
-      const diagMove = (e) => {
-        const ghost = document.querySelector('.ag-dnd-ghost');
-        if (ghost) {
-          const newTop = ghost.style.top;
-          if (newTop !== lastGhostTop) {
-            console.log('[DIAG] ghost moved:', ghost.style.top, ghost.style.left, 'cursor:', e.clientX, e.clientY);
-            lastGhostTop = newTop;
-          }
-        }
-      };
-      document.addEventListener('mousemove', diagMove);
-      gridRoot.value.__diagCleanup = () => {
-        document.removeEventListener('mousemove', diagMove);
-      };
-
       ctx.emit("trigger-event", {
         name: "rowDragStart",
         event: { row: event.node.data, id: event.node.id },
@@ -1106,21 +1054,7 @@ export default {
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer" ||
-                params.colDef?.cellRenderer === "GroupCellRenderer";
-
-          // Only add class when cell will actually get a background from cellStyle.
-          // Without a background the row's ::before hover already provides the overlay;
-          // adding the class would trigger ::after too, causing a double-strength hover.
-          const hasBg = isEditable ? !!editableBg : !!nonEditableBg;
-          if (!hasBg) {
-            if (existingCellClass) {
-              return typeof existingCellClass === "function"
-                ? existingCellClass(params)
-                : existingCellClass;
-            }
-            return null;
-          }
+                params.colDef?.cellRenderer === "WewebCellRenderer";
 
           const bgClass = isEditable
             ? "ww-cell-editable"
@@ -1144,8 +1078,7 @@ export default {
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer" ||
-                params.colDef?.cellRenderer === "GroupCellRenderer";
+                params.colDef?.cellRenderer === "WewebCellRenderer";
           const style = {};
           if (isEditable) {
             if (editableBg) style.backgroundColor = editableBg;
@@ -1199,6 +1132,12 @@ export default {
         sortable: treeGroupCol.sortable,
         filter: treeGroupCol.filter,
         pinned: treeGroupCol.pinned === "none" ? false : treeGroupCol.pinned,
+        // Match commonProperties cellClass so AG Grid merge overrides defaultColDef.cellClass.
+        // Without this, defaultColDef.cellClass (ww-cell-* hover classes) survives the merge,
+        // causing a double hover overlay on the auto group column.
+        ...(this.content?.cellAlignmentMode !== "custom"
+          ? { cellClass: treeGroupCol?.cellAlignment ? `-${treeGroupCol.cellAlignment}` : null }
+          : {}),
       };
     },
     columnDefs() {
@@ -2274,16 +2213,6 @@ export default {
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
   :deep(.ag-row.ag-row-highlight-inside) {
     background-color: rgba(33, 150, 243, 0.1) !important;
-  }
-
-  // During row drag, neutralize drag handles and their parent weweb wrappers
-  // to prevent pointer capture disruption from touch-action:none zones.
-  &.ww-row-dragging {
-    :deep(.ww-drag-handle),
-    :deep(.group-cell-content) {
-      pointer-events: none !important;
-      touch-action: auto !important;
-    }
   }
 
   // Extend hover/selection overlays 1px above the row to close
