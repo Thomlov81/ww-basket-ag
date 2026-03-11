@@ -137,9 +137,6 @@ export default {
         label: "Tree Column",
         isCollapsible: true,
         properties: [
-          "treeGroupColumnWidth",
-          "treeGroupColumnMinWidth",
-          "treeGroupColumnPadding",
           "treeGroupIndentSize",
           "treeChildRowBackgroundColor",
         ],
@@ -203,9 +200,7 @@ export default {
         isCollapsible: true,
         properties: [
           "treeDataParentIdField",
-          "treeGroupColumnField",
           "treeGroupDefaultExpanded",
-          "treeShowChildCount",
           "treeAllowParentField",
         ],
       },
@@ -2400,19 +2395,6 @@ export default {
       },
       /* wwEditor:end */
     },
-    treeGroupColumnField: {
-      label: { en: "Group Column Field" },
-      type: "Text",
-      section: "settings",
-      defaultValue: "",
-      bindable: true,
-      /* wwEditor:start */
-      bindingValidation: {
-        type: "string",
-        tooltip: "Data field to display in the group column",
-      },
-      /* wwEditor:end */
-    },
     treeGroupDefaultExpanded: {
       label: { en: "Default Expanded Level" },
       type: "Number",
@@ -2431,19 +2413,6 @@ export default {
       },
       /* wwEditor:end */
     },
-    treeShowChildCount: {
-      label: { en: "Show Child Count" },
-      type: "OnOff",
-      section: "settings",
-      defaultValue: false,
-      bindable: true,
-      /* wwEditor:start */
-      bindingValidation: {
-        type: "boolean",
-        tooltip: "Show the number of children next to parent rows",
-      },
-      /* wwEditor:end */
-    },
     treeAllowParentField: {
       label: { en: "Allow Parent Field" },
       type: "Text",
@@ -2457,59 +2426,6 @@ export default {
       },
       /* wwEditor:end */
     },
-    treeGroupColumnWidth: {
-      label: { en: "Group Column Width" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 30, max: 400 }],
-      },
-    },
-    treeGroupColumnMinWidth: {
-      label: { en: "Group Column Min Width" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      defaultValue: "50px",
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 20, max: 400 }],
-      },
-    },
-    treeLeafIcon: {
-      label: { en: "Leaf Icon" },
-      type: "SystemIcon",
-      section: "style",
-      bindable: true,
-      responsive: true,
-      states: true,
-      classes: true,
-      defaultValue: null,
-    },
-    treeLeafIconSize: {
-      label: { en: "Leaf Icon Size" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      defaultValue: "14px",
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 8, max: 32 }],
-      },
-    },
-    treeLeafIconColor: {
-      label: { en: "Leaf Icon Color" },
-      type: "Color",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-    },
     treeGroupIndentSize: {
       label: { en: "Group Indent Size" },
       type: "Length",
@@ -2519,107 +2435,6 @@ export default {
       classes: true,
       options: {
         unitChoices: [{ value: "px", label: "px", min: 0, max: 80 }],
-      },
-    },
-    treeGroupCellWidgetSpacing: {
-      label: { en: "Cell Widget Spacing" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 0, max: 24 }],
-      },
-      /* wwEditor:start */
-      bindingValidation: {
-        type: "string",
-        tooltip:
-          "Spacing between items (drag handle, chevron, content) in the group cell",
-      },
-      /* wwEditor:end */
-    },
-    treeGroupColumnPadding: {
-      label: { en: "Group Column Padding" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 0, max: 40 }],
-      },
-    },
-    treeChevronColor: {
-      label: { en: "Chevron Color" },
-      type: "Color",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-    },
-    treeChevronSize: {
-      label: { en: "Chevron Size" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 8, max: 32 }],
-      },
-    },
-    treeChevronHoverColor: {
-      label: { en: "Chevron Hover Color" },
-      type: "Color",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-    },
-    treeChevronHoverPadding: {
-      label: { en: "Chevron Hover Size" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      defaultValue: "4px",
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 0, max: 12 }],
-      },
-    },
-    treeDragHandleColor: {
-      label: { en: "Drag Handle Color" },
-      type: "Color",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-    },
-    treeDragHandleSize: {
-      label: { en: "Drag Handle Size" },
-      type: "Length",
-      section: "style",
-      responsive: true,
-      states: true,
-      classes: true,
-      options: {
-        unitChoices: [{ value: "px", label: "px", min: 8, max: 32 }],
-      },
-    },
-    treeDragHandleCursor: {
-      label: { en: "Drag Handle Cursor" },
-      type: "TextSelect",
-      section: "style",
-      defaultValue: "grab",
-      options: {
-        options: [
-          { value: "grab", label: "Grab" },
-          { value: "move", label: "Move" },
-          { value: "pointer", label: "Pointer" },
-          { value: "default", label: "Default" },
-        ],
       },
     },
     treeChildRowBackgroundColor: {

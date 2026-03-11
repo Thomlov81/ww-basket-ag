@@ -1060,7 +1060,8 @@ export default {
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer";
+                params.colDef?.cellRenderer === "WewebCellRenderer" ||
+                params.colDef?.cellRenderer === "GroupCellRenderer";
 
           const bgClass = isEditable
             ? "ww-cell-editable"
@@ -1084,7 +1085,8 @@ export default {
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer";
+                params.colDef?.cellRenderer === "WewebCellRenderer" ||
+                params.colDef?.cellRenderer === "GroupCellRenderer";
           const style = {};
           if (isEditable) {
             if (editableBg) style.backgroundColor = editableBg;
@@ -1142,7 +1144,10 @@ export default {
         // Without this, defaultColDef.cellClass (ww-cell-* hover classes) survives the merge,
         // causing a double hover overlay on the auto group column.
         ...(this.content?.cellAlignmentMode !== "custom"
-          ? { cellClass: treeGroupCol?.cellAlignment ? `-${treeGroupCol.cellAlignment}` : null }
+          ? { cellClass: [
+              treeGroupCol?.cellAlignment ? `-${treeGroupCol.cellAlignment}` : null,
+              (this.content?.editableCellBackgroundColor || this.content?.nonEditableCellBackgroundColor) ? "ww-cell-editable" : null,
+            ].filter(Boolean).join(" ") || null }
           : {}),
       };
     },
@@ -1420,8 +1425,10 @@ export default {
       if (this.content?.rowSelection === "multiple") {
         return {
           mode: "multiRow",
-          checkboxes: !this.content?.disableCheckboxes,
-          headerCheckbox: !this.content?.disableCheckboxes,
+          checkboxes: selectableFormula
+            ? (params) => selectableFormula(params.node)
+            : !this.content?.disableCheckboxes,
+          headerCheckbox: !this.content?.disableCheckboxes && !selectableFormula,
           selectAll: this.content?.selectAll || "all",
           enableClickSelection: this.content?.enableClickSelection,
           isRowSelectable: selectableFormula,
@@ -1429,7 +1436,9 @@ export default {
       } else if (this.content?.rowSelection === "single") {
         return {
           mode: "singleRow",
-          checkboxes: !this.content?.disableCheckboxes,
+          checkboxes: selectableFormula
+            ? (params) => selectableFormula(params.node)
+            : !this.content?.disableCheckboxes,
           enableClickSelection: this.content?.enableClickSelection,
           isRowSelectable: selectableFormula,
         };
