@@ -742,6 +742,30 @@ export default {
       }
     };
 
+    // Shared helper: compute the intended drop parent from the drag event.
+    // We cannot rely on rowsDrop.newParent alone because AG Grid's clearNewSameParent()
+    // nulls it when the dragged row already belongs to that parent.
+    const computeDropParent = (event) => {
+      const rowsDrop = event.rowsDrop;
+      if (!rowsDrop) return null;
+
+      if (rowsDrop.newParent && rowsDrop.newParent.level === 0) {
+        return rowsDrop.newParent;
+      }
+
+      const overNode = event.overNode;
+      const pointerPos = rowsDrop.pointerPos;
+      if (overNode) {
+        const hasChildren = overNode.childrenAfterGroup?.length > 0;
+        if ((pointerPos === 'inside' || (pointerPos === 'below' && hasChildren)) && overNode.level === 0) {
+          return overNode;
+        } else if (overNode.level > 0 && overNode.parent && overNode.parent.level >= 0) {
+          return overNode.parent;
+        }
+      }
+      return null;
+    };
+
     const onRowDragged = (event) => {
       clearDragHighlight();
 
@@ -752,11 +776,17 @@ export default {
       const parentIdField = props.content?.treeDataParentIdField || "parentId";
       const rowsDrop = event.rowsDrop;
 
-      // Map v35 position to our dropType
+      // Use the same parent logic as onRowDragMove so dropType matches the visual highlight
+      const parentNode = computeDropParent(event);
+
       let dropType = null;
-      if (rowsDrop?.position === 'inside') dropType = 'child';
-      else if (rowsDrop?.position === 'above') dropType = 'above';
-      else if (rowsDrop?.position === 'below') dropType = 'below';
+      if (parentNode) {
+        dropType = 'child';
+      } else if (rowsDrop?.position === 'above') {
+        dropType = 'above';
+      } else if (rowsDrop?.position === 'below') {
+        dropType = 'below';
+      }
 
       const eventData = {
         row: event.node.data,
@@ -767,7 +797,7 @@ export default {
         overNodeId: rowsDrop?.target?.data?.id ?? rowsDrop?.target?.id ?? null,
         overNodeData: rowsDrop?.target?.data ?? null,
         dropType,
-        targetParentId: rowsDrop?.newParent?.data?.id ?? rowsDrop?.newParent?.id ?? null,
+        targetParentId: parentNode?.data?.id ?? parentNode?.id ?? null,
       };
       ctx.emit("trigger-event", {
         name: "rowDragged",
@@ -786,31 +816,7 @@ export default {
       const rowsDrop = event.rowsDrop;
       if (!rowsDrop) return;
 
-      // Compute the intended parent ourselves.
-      // We cannot rely on rowsDrop.newParent because AG Grid's clearNewSameParent()
-      // nulls it when the dragged row already belongs to that parent.
-      let parentNode = null;
-
-      if (rowsDrop.newParent && rowsDrop.newParent.level === 0) {
-        // newParent available (first drag into a new parent)
-        parentNode = rowsDrop.newParent;
-      } else {
-        // newParent was nulled — compute from overNode + pointerPos (raw mouse position)
-        const overNode = event.overNode;
-        const pointerPos = rowsDrop.pointerPos;
-
-        if (overNode) {
-          const hasChildren = overNode.childrenAfterGroup?.length > 0;
-          if ((pointerPos === 'inside' || (pointerPos === 'below' && hasChildren)) && overNode.level === 0) {
-            // Dragging into the middle of a root row → it becomes the parent
-            parentNode = overNode;
-          } else if (overNode.level > 0 && overNode.parent && overNode.parent.level >= 0) {
-            // Over a child row → parent is the child's parent
-            parentNode = overNode.parent;
-          }
-        }
-      }
-
+      const parentNode = computeDropParent(event);
       const parentId = parentNode?.id ?? null;
 
       if (parentId !== highlightedParentId.value) {
