@@ -72,7 +72,7 @@ export default {
         syncFromParams() {
             this.expanded = this.params?.node?.expanded ?? false;
             this.currentValue = this.params?.value;
-            this.currentData = this.params?.data;
+            this.currentData = this.params?.data ? { ...this.params.data } : null;
             this.currentIsGroup = this.params?.node?.group ?? false;
             this.currentLevel = this.params?.node?.level ?? 0;
             this.currentChildCount = this.params?.node?.childrenAfterGroup?.length ?? 0;
