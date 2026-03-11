@@ -2105,6 +2105,10 @@ export default {
     &.-left .ag-header-cell-label {
       justify-content: flex-start;
     }
+    .ag-header-select-all {
+      display: flex;
+      width: 100%;
+    }
     &.-center .ag-header-select-all {
       justify-content: center;
     }
@@ -2131,6 +2135,17 @@ export default {
     }
     &.-left .ag-cell-value {
       text-align: left;
+    }
+    &.-center,
+    &.-right,
+    &.-left {
+      .ag-cell-wrapper {
+        width: 100%;
+      }
+      .ag-selection-checkbox {
+        display: flex;
+        flex: 1;
+      }
     }
     &.-center .ag-selection-checkbox {
       justify-content: center;
@@ -2247,11 +2262,11 @@ export default {
   }
 
   // Add column border to pinned-left selection column (header + body)
-  :deep(.ag-pinned-left-header .ag-header-cell) {
-    border-right: var(--ag-column-border);
+  :deep(.ag-ltr .ag-cell.ag-cell-last-left-pinned) {
+    border-right: var(--ag-cell-horizontal-border) !important;
   }
-  :deep(.ag-pinned-left-cols-container .ag-cell) {
-    border-right: var(--ag-column-border);
+  :deep(.ag-pinned-left-header .ag-header-cell) {
+    border-right: var(--ag-cell-horizontal-border);
   }
 
   // Tree child row background (non-root rows only)
