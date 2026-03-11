@@ -1412,6 +1412,11 @@ export default {
       return result;
     },
     rowSelection() {
+      const selectableFormula =
+        this.content?.useSelectableFormula && this.content?.selectableFormula
+          ? (node) => !!this.resolveMappingFormula(this.content?.selectableFormula, node.data)
+          : undefined;
+
       if (this.content?.rowSelection === "multiple") {
         return {
           mode: "multiRow",
@@ -1419,12 +1424,14 @@ export default {
           headerCheckbox: !this.content?.disableCheckboxes,
           selectAll: this.content?.selectAll || "all",
           enableClickSelection: this.content?.enableClickSelection,
+          isRowSelectable: selectableFormula,
         };
       } else if (this.content?.rowSelection === "single") {
         return {
           mode: "singleRow",
           checkboxes: !this.content?.disableCheckboxes,
           enableClickSelection: this.content?.enableClickSelection,
+          isRowSelectable: selectableFormula,
         };
       } else {
         return {
@@ -1437,9 +1444,13 @@ export default {
     },
     selectionColumnDef() {
       const alignment = this.content?.selectionColumnAlignment;
+      const width = this.content?.selectionColumnWidth || 56;
       return {
         pinned: true,
-        width: this.content?.selectionColumnWidth || 56,
+        width,
+        minWidth: width,
+        maxWidth: width,
+        suppressSizeToFit: true,
         cellClass: alignment ? `-${alignment}` : null,
         headerClass: alignment ? `-${alignment}` : null,
       };
@@ -2088,6 +2099,15 @@ export default {
     &.-left .ag-header-cell-label {
       justify-content: flex-start;
     }
+    &.-center .ag-header-select-all {
+      justify-content: center;
+    }
+    &.-right .ag-header-select-all {
+      justify-content: flex-end;
+    }
+    &.-left .ag-header-select-all {
+      justify-content: flex-start;
+    }
   }
   :deep(.ag-cell) {
     .ag-cell-value {
@@ -2105,6 +2125,15 @@ export default {
     }
     &.-left .ag-cell-value {
       text-align: left;
+    }
+    &.-center .ag-selection-checkbox {
+      justify-content: center;
+    }
+    &.-right .ag-selection-checkbox {
+      justify-content: flex-end;
+    }
+    &.-left .ag-selection-checkbox {
+      justify-content: flex-start;
     }
   }
 

@@ -191,6 +191,8 @@ export default {
           "rowSelection",
           "enableClickSelection",
           "disableCheckboxes",
+          "useSelectableFormula",
+          "selectableFormula",
           "selectAll",
           "selectionColumnWidth",
           "selectionColumnAlignment",
@@ -2204,6 +2206,33 @@ export default {
       },
       hidden: (content) =>
         content.rowSelection === "none" || content.rowSelection === undefined,
+      /* wwEditor:end */
+    },
+    useSelectableFormula: {
+      label: { en: "Conditional Selectable" },
+      type: "OnOff",
+      section: "settings",
+      defaultValue: false,
+      /* wwEditor:start */
+      hidden: (content) =>
+        content.rowSelection === "none" ||
+        content.rowSelection === undefined ||
+        content.disableCheckboxes,
+      /* wwEditor:end */
+    },
+    selectableFormula: {
+      label: { en: "Selectable Condition" },
+      type: "Formula",
+      section: "settings",
+      options: (content) => ({
+        template: wwLib.wwUtils.getDataFromCollection(content.rowData)?.[0],
+      }),
+      /* wwEditor:start */
+      hidden: (content) =>
+        content.rowSelection === "none" ||
+        content.rowSelection === undefined ||
+        content.disableCheckboxes ||
+        !content.useSelectableFormula,
       /* wwEditor:end */
     },
     selectAll: {
