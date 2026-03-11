@@ -1556,6 +1556,10 @@ export default {
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
         // Tree child row background
         "--ww-tree-child-row-bg": this.content?.treeChildRowBackgroundColor,
+        // Column border for pinned selection column
+        "--ww-column-border": this.content?.columnBorderEnabled
+          ? `${this.content?.columnBorderStyle || "solid"} ${this.content?.columnBorderWidth || "1px"} ${this.content?.columnBorderColor || "transparent"}`
+          : null,
       };
     },
     theme() {
@@ -2268,14 +2272,11 @@ export default {
   }
 
   // Add column divider to pinned-left selection column (header + body)
-  :deep(.ag-pinned-left-cols-container .ag-cell) {
-    border-right: var(--ag-cell-horizontal-border);
-  }
-  :deep(.ag-ltr .ag-cell.ag-cell-last-left-pinned) {
-    border-right: var(--ag-cell-horizontal-border) !important;
+  :deep(.ag-cell.ag-cell-last-left-pinned) {
+    border-right: var(--ww-column-border, none) !important;
   }
   :deep(.ag-pinned-left-header .ag-header-cell) {
-    border-right: var(--ag-cell-horizontal-border);
+    border-right: var(--ww-column-border, none);
   }
 
   // Tree child row background (non-root rows only)
