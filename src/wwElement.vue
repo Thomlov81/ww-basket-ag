@@ -1558,7 +1558,7 @@ export default {
         "--ww-tree-child-row-bg": this.content?.treeChildRowBackgroundColor,
         // Column border for pinned selection column
         "--ww-column-border": this.content?.columnBorderEnabled
-          ? `${this.content?.columnBorderStyle || "solid"} ${this.content?.columnBorderWidth || "1px"} ${this.content?.columnBorderColor || "transparent"}`
+          ? `${this.content?.columnBorderStyle || "solid"} ${(this.content?.columnBorderWidth || 1) + "px"} ${this.content?.columnBorderColor || "transparent"}`
           : null,
       };
     },
