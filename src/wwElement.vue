@@ -1144,10 +1144,7 @@ export default {
         // Without this, defaultColDef.cellClass (ww-cell-* hover classes) survives the merge,
         // causing a double hover overlay on the auto group column.
         ...(this.content?.cellAlignmentMode !== "custom"
-          ? { cellClass: [
-              treeGroupCol?.cellAlignment ? `-${treeGroupCol.cellAlignment}` : null,
-              (this.content?.editableCellBackgroundColor || this.content?.nonEditableCellBackgroundColor) ? "ww-cell-editable" : null,
-            ].filter(Boolean).join(" ") || null }
+          ? { cellClass: treeGroupCol?.cellAlignment ? `-${treeGroupCol.cellAlignment}` : null }
           : {}),
       };
     },
@@ -1428,7 +1425,7 @@ export default {
           checkboxes: selectableFormula
             ? (params) => selectableFormula(params.node)
             : !this.content?.disableCheckboxes,
-          headerCheckbox: !this.content?.disableCheckboxes && !selectableFormula,
+          headerCheckbox: !this.content?.disableCheckboxes,
           selectAll: this.content?.selectAll || "all",
           enableClickSelection: this.content?.enableClickSelection,
           isRowSelectable: selectableFormula,
@@ -2247,6 +2244,14 @@ export default {
   }
   :deep(.ag-cell) {
     border-bottom: var(--ag-row-border);
+  }
+
+  // Add column border to pinned-left selection column (header + body)
+  :deep(.ag-pinned-left-header .ag-header-cell) {
+    border-right: var(--ag-column-border);
+  }
+  :deep(.ag-pinned-left-cols-container .ag-cell) {
+    border-right: var(--ag-column-border);
   }
 
   // Tree child row background (non-root rows only)
