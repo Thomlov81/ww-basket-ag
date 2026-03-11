@@ -2107,7 +2107,10 @@ export default {
     }
     .ag-header-select-all {
       display: flex;
-      width: 100%;
+      flex: 1;
+    }
+    .ag-header-select-all ~ .ag-header-cell-comp-wrapper {
+      display: none;
     }
     &.-center .ag-header-select-all {
       justify-content: center;
@@ -2139,6 +2142,9 @@ export default {
     &.-center,
     &.-right,
     &.-left {
+      .ag-selection-checkbox ~ .ag-cell-value:empty {
+        display: none;
+      }
       .ag-cell-wrapper {
         width: 100%;
       }
@@ -2261,7 +2267,10 @@ export default {
     border-bottom: var(--ag-row-border);
   }
 
-  // Add column border to pinned-left selection column (header + body)
+  // Add column divider to pinned-left selection column (header + body)
+  :deep(.ag-pinned-left-cols-container .ag-cell) {
+    border-right: var(--ag-cell-horizontal-border);
+  }
   :deep(.ag-ltr .ag-cell.ag-cell-last-left-pinned) {
     border-right: var(--ag-cell-horizontal-border) !important;
   }
