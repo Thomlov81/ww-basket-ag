@@ -2215,6 +2215,7 @@ export default {
   // Fill container mode
   &.fill-mode {
     display: block;
+    overflow: hidden;
   }
 
   // Settings icon button
