@@ -1106,48 +1106,56 @@ export default {
       const editableCursor = this.content?.editableCellCursor;
       const nonEditableCursor = this.content?.nonEditableCellCursor;
 
-      // Add CSS classes for targeting cells with hover/selection overlays
-      if (editableBg || nonEditableBg) {
+      // Add CSS classes for targeting cells with hover/selection overlays + loading
+      {
         const existingCellClass = definition.cellClass;
         definition.cellClass = (params) => {
-          const isEditable =
-            typeof params.colDef?.editable === "function"
-              ? params.colDef.editable(params)
-              : !!params.colDef?.editable ||
-                params.colDef?.cellRenderer === "WewebCellRenderer" ||
-                params.colDef?.cellRenderer === "GroupCellRenderer";
+          const classes = [];
 
-          const bgClass = isEditable
-            ? "ww-cell-editable"
-            : "ww-cell-non-editable";
-
+          // Resolve base class
           if (existingCellClass) {
             const existing =
               typeof existingCellClass === "function"
                 ? existingCellClass(params)
                 : existingCellClass;
-            return existing ? [existing, bgClass] : bgClass;
+            if (existing) {
+              if (Array.isArray(existing)) classes.push(...existing);
+              else classes.push(existing);
+            }
           }
-          return bgClass;
+
+          // Editable/non-editable class for hover/selection overlays
+          if (editableBg || nonEditableBg) {
+            const isEditable =
+              typeof params.colDef?.editable === "function"
+                ? params.colDef.editable(params)
+                : !!params.colDef?.editable ||
+                  params.colDef?.cellRenderer === "WewebCellRenderer" ||
+                  params.colDef?.cellRenderer === "GroupCellRenderer";
+            classes.push(isEditable ? "ww-cell-editable" : "ww-cell-non-editable");
+          }
+
+          // Loading class (text-only opacity via CSS)
+          const loadingFormula = params.colDef?._loadingFormula;
+          if (loadingFormula) {
+            const isLoading = !!this.resolveMappingFormula(loadingFormula, params.data);
+            classes.push(isLoading ? "ww-cell-loading" : "ww-cell-not-loading");
+          }
+
+          return classes.length > 0 ? classes : null;
         };
       }
 
-      // Loading effect config
-      const loadingOpacity = this.content?.loadingOpacity ?? 0.3;
-      const loadingTransition = this.content?.loadingTransitionDuration ?? 300;
-
-      // Inline cellStyle for backgroundColor + cursor + loading effect
-      definition.cellStyle = (params) => {
-        const style = {};
-
-        // Editable/non-editable visual differentiation
-        if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
+      // Inline cellStyle for backgroundColor + cursor (skip drag column)
+      if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
+        definition.cellStyle = (params) => {
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
                 params.colDef?.cellRenderer === "WewebCellRenderer" ||
                 params.colDef?.cellRenderer === "GroupCellRenderer";
+          const style = {};
           if (isEditable) {
             if (editableBg) style.backgroundColor = editableBg;
             if (editableCursor) style.cursor = editableCursor;
@@ -1155,23 +1163,9 @@ export default {
             if (nonEditableBg) style.backgroundColor = nonEditableBg;
             if (nonEditableCursor) style.cursor = nonEditableCursor;
           }
-        }
-
-        // Loading effect
-        const loadingFormula = params.colDef?._loadingFormula;
-        if (loadingFormula) {
-          const isLoading = !!this.resolveMappingFormula(loadingFormula, params.data);
-          style.transition = `opacity ${loadingTransition}ms ease`;
-          if (isLoading) {
-            style.opacity = loadingOpacity;
-            style.pointerEvents = 'none';
-          } else {
-            style.opacity = 1;
-          }
-        }
-
-        return Object.keys(style).length > 0 ? style : null;
-      };
+          return Object.keys(style).length > 0 ? style : null;
+        };
+      }
 
       if (this.content?.useDynamicStyleHeader) {
         definition.headerStyle = this.getHeaderStyle;
@@ -1642,6 +1636,9 @@ export default {
         "--ww-tree-child-row-bg": this.content?.treeChildRowBackgroundColor,
         // Drag highlight color
         "--ww-drag-highlight-color": this.content?.dragHighlightColor || "rgba(33, 150, 243, 0.1)",
+        // Loading effect
+        "--ww-loading-opacity": this.content?.loadingOpacity ?? 0.3,
+        "--ww-loading-transition": `${this.content?.loadingTransitionDuration ?? 300}ms`,
         // Column border for pinned selection column
         "--ww-column-border": this.content?.columnBorderEnabled
           ? `${this.content?.columnBorderStyle || "solid"} ${(this.content?.columnBorderWidth || 1) + "px"} ${this.content?.columnBorderColor || "transparent"}`
@@ -2398,6 +2395,24 @@ export default {
     .ag-cell-value {
       position: relative;
       z-index: 1;
+    }
+  }
+
+  // Loading effect — opacity on text content only
+  :deep(.ww-cell-loading) {
+    .ag-cell-wrapper,
+    .ag-cell-value {
+      opacity: var(--ww-loading-opacity, 0.3);
+      transition: opacity var(--ww-loading-transition, 300ms) ease;
+      pointer-events: none;
+    }
+  }
+
+  :deep(.ww-cell-not-loading) {
+    .ag-cell-wrapper,
+    .ag-cell-value {
+      opacity: 1;
+      transition: opacity var(--ww-loading-transition, 300ms) ease;
     }
   }
 
