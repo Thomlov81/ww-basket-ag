@@ -1810,8 +1810,7 @@ export default {
                 hidden:
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
-                  array?.item?.cellDataType === "custom" ||
-                  array?.item?.cellDataType === "search",
+                  array?.item?.cellDataType === "custom",
                 bindable: true,
               },
               useEditableFormula: {
@@ -1821,7 +1820,6 @@ export default {
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
                   array?.item?.cellDataType === "custom" ||
-                  array?.item?.cellDataType === "search" ||
                   !array?.item?.editable,
               },
               editableFormula: {
@@ -1834,7 +1832,6 @@ export default {
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
                   array?.item?.cellDataType === "custom" ||
-                  array?.item?.cellDataType === "search" ||
                   !array?.item?.editable ||
                   !array?.item?.useEditableFormula,
               },

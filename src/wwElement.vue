@@ -1330,6 +1330,16 @@ export default {
               cellRendererParams: {
                 containerId: col?.containerId,
               },
+              tooltipValueGetter: (params) => {
+                const rowId = params.node.id;
+                const colId = params.column.getColId();
+                const cell = document.querySelector(`[row-id="${rowId}"] [col-id="${colId}"]`);
+                const textEl = cell?.querySelector('.info-cell-value-text');
+                if (textEl && textEl.scrollWidth > textEl.clientWidth) {
+                  return params.valueFormatted ?? params.value;
+                }
+                return undefined;
+              },
               sortable: col?.sortable,
               filter: col?.filter,
               editable:
