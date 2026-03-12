@@ -55,6 +55,7 @@
       @column-resized="onColumnResized"
       @pagination-changed="onPaginationChanged"
       @grid-size-changed="onGridSizeChanged"
+      @row-group-opened="onRowGroupOpened"
     >
     </ag-grid-vue>
     <button
@@ -466,6 +467,10 @@ export default {
 
     const onGridSizeChanged = () => {
       measureGridHeight();
+    };
+
+    const onRowGroupOpened = () => {
+      setTimeout(measureGridHeight, 50);
     };
 
     // Helper to apply column overrides from external state
@@ -1002,6 +1007,7 @@ export default {
       measuredNaturalHeight,
       measureGridHeight,
       onGridSizeChanged,
+      onRowGroupOpened,
       gridRoot,
       /* wwEditor:start */
       createElement,
@@ -1257,6 +1263,7 @@ export default {
               },
               sortable: col?.sortable,
               filter: col?.filter,
+              tooltipValueGetter: null,
             };
           case "search": {
             const searchAlignmentClass = col?.cellAlignment ? `-${col.cellAlignment}` : '';
@@ -1292,10 +1299,14 @@ export default {
                 cellHorizontalPadding: parseInt(this.content?.cellHorizontalPadding) || 0,
                 getIcon: this.getIcon,
               },
-              editable: true,
+              editable:
+                col?.editable && col?.useEditableFormula && col?.editableFormula
+                  ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
+                  : !!col?.editable,
               sortable: col?.sortable,
               filter: col?.filter,
               singleClickEdit: true,
+              tooltipValueGetter: null,
             };
           }
           case "image": {
@@ -1319,7 +1330,6 @@ export default {
               cellRendererParams: {
                 containerId: col?.containerId,
               },
-              tooltipValueGetter: null,
               sortable: col?.sortable,
               filter: col?.filter,
               editable:
