@@ -139,6 +139,7 @@ export default {
         properties: [
           "treeGroupIndentSize",
           "treeChildRowBackgroundColor",
+          "dragHighlightColor",
         ],
       },
       {
@@ -2436,6 +2437,14 @@ export default {
     },
     treeChildRowBackgroundColor: {
       label: { en: "Child Row Background" },
+      type: "Color",
+      section: "style",
+      responsive: true,
+      states: true,
+      classes: true,
+    },
+    dragHighlightColor: {
+      label: { en: "Drag Highlight Color" },
       type: "Color",
       section: "style",
       responsive: true,

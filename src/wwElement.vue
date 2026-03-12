@@ -735,6 +735,15 @@ export default {
       if (rowsDrop.position === 'inside' && rowsDrop.overNode?.level > 0) {
         return false;
       }
+      // Prevent dropping a parent row (one that has children) inside another row
+      if (rowsDrop.position === 'inside' && rowsDrop.rows?.some(node => node.childrenAfterGroup?.length > 0)) {
+        return false;
+      }
+      // Prevent dropping inside a row that is not allowed to be a parent
+      const allowParentField = props.content?.treeAllowParentField;
+      if (allowParentField && rowsDrop.position === 'inside') {
+        if (!rowsDrop.overNode?.data?.[allowParentField]) return false;
+      }
       return true;
     };
 
@@ -754,7 +763,15 @@ export default {
       const rowsDrop = event.rowsDrop;
       if (!rowsDrop) return null;
 
+      // If any dragged row has children, it cannot become a child itself
+      if (rowsDrop.rows?.some(node => node.childrenAfterGroup?.length > 0)) {
+        return null;
+      }
+
+      const allowParentField = props.content?.treeAllowParentField;
+
       if (rowsDrop.newParent && rowsDrop.newParent.level === 0) {
+        if (allowParentField && !rowsDrop.newParent.data?.[allowParentField]) return null;
         return rowsDrop.newParent;
       }
 
@@ -763,8 +780,12 @@ export default {
       if (overNode) {
         const hasChildren = overNode.childrenAfterGroup?.length > 0;
         if ((pointerPos === 'inside' || (pointerPos === 'below' && hasChildren)) && overNode.level === 0) {
+          // Don't highlight when dragging a row onto itself
+          if (overNode === event.node) return null;
+          if (allowParentField && !overNode.data?.[allowParentField]) return null;
           return overNode;
         } else if (overNode.level > 0 && overNode.parent && overNode.parent.level >= 0) {
+          if (allowParentField && !overNode.parent.data?.[allowParentField]) return null;
           return overNode.parent;
         }
       }
@@ -1567,6 +1588,8 @@ export default {
         "--ww-cell-editing-border-style": this.content?.cellEditingBorderStyle || "solid",
         // Tree child row background
         "--ww-tree-child-row-bg": this.content?.treeChildRowBackgroundColor,
+        // Drag highlight color
+        "--ww-drag-highlight-color": this.content?.dragHighlightColor || "rgba(33, 150, 243, 0.1)",
         // Column border for pinned selection column
         "--ww-column-border": this.content?.columnBorderEnabled
           ? `${this.content?.columnBorderStyle || "solid"} ${(this.content?.columnBorderWidth || 1) + "px"} ${this.content?.columnBorderColor || "transparent"}`
@@ -2298,7 +2321,7 @@ export default {
 
   // Drag & drop parent highlight (uses AG Grid's built-in RowDropHighlightService)
   :deep(.ag-row.ag-row-highlight-inside) {
-    background-color: rgba(33, 150, 243, 0.1) !important;
+    background-color: var(--ww-drag-highlight-color) !important;
   }
 
   // Extend hover/selection overlays 1px above the row to close
