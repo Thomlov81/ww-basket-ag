@@ -170,7 +170,7 @@ export default {
     // Tree expand/collapse animation state
     const isTreeAnimating = ref(false);
     let treeAnimationTimer = null;
-    const TREE_ANIMATION_DURATION = 400; // matches AG Grid's 0.4s row transition
+    const TREE_ANIMATION_DURATION = 200; // faster than AG Grid's row transition
 
     // Cleanup tree animation timer on unmount
     onBeforeUnmount(() => {
@@ -1525,7 +1525,7 @@ export default {
       if (this.content?.layout === "fill") {
         const baseStyle = { height: this.fillContainerHeight || "400px" };
         if (this.isTreeAnimating) {
-          baseStyle.transition = 'height 0.4s ease-out';
+          baseStyle.transition = 'height 0.2s ease-out';
         }
         return baseStyle;
       }
