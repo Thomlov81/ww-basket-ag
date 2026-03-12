@@ -1,27 +1,70 @@
-# CLAUDE.md - WeWeb Component Development Guide
-|
-This file provides comprehensive guidance for developing WeWeb custom components in this repository.
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+WeWeb custom component wrapping **AG Grid Enterprise** for advanced data grid functionality. Built with Vue 3 and the WeWeb CLI framework.
 
 ## Development Commands
 
-- **Install dependencies**: `npm i`
-- **Serve locally**: `npm run serve --port=[PORT]` (then add custom element in WeWeb editor developer popup)
-- **Build for release**: `npm run build -- name="my-element" type="wwobject"` (check for build errors before release)
+```bash
+npm install                                           # Install dependencies
+npm run serve --port=8080                             # Serve locally (add via WeWeb editor dev popup)
+npm run build -- name="ag-grid-table" type="wwobject" # Build for release
+```
+
+## Project Architecture
+
+### Core Files
+- `src/wwElement.vue` - Main datagrid component (~2400 lines) with AG Grid integration
+- `ww-config.js` - WeWeb editor configuration (properties, triggers, actions)
+
+### Cell Renderers (`src/components/`)
+| File | Purpose |
+|------|---------|
+| `ActionCellRenderer.vue` | Clickable action buttons in cells |
+| `ImageCellRenderer.vue` | Image display in cells |
+| `WewebCellRenderer.vue` | Custom WeWeb element embedding |
+| `SearchCellRenderer.vue` / `SearchCellEditor.vue` | Searchable cell with inline editor |
+| `InfoCellRenderer.vue` | Info display with custom content |
+| `GroupCellRenderer.vue` | Tree data group cells with expand/collapse |
+
+### Column Types
+`text`, `number`, `boolean`, `dateString`, `image`, `action`, `custom`, `search`, `info`, `treeGroup`
+
+### Height Modes
+- **Fixed**: Explicit height via `height` property
+- **Auto**: Grows with content (caution with large datasets)
+- **Fill Container**: Caps at parent height with internal scrollbar
+
+### Component Variables (exposed to WeWeb)
+- `selectedRows`, `filters`, `sort`, `columnOrder` - Grid state
+- `data` - Computed: `{ allData, sortedFilteredData, displayedData, total, totalPages, ... }`
+- `searchOpen`, `searchText`, `searchEditingCell` - Search column state
+
+### Component Actions
+`resetFilters`, `resetSort`, `selectAll`, `deselectAll`, `selectRow(id)`, `deselectRow(id)`, `refreshData`, `updateColumnOverrides`, `stopSearchEditing`, `toggleExpand(nodeId)`
+
+### Events
+| Event | Payload |
+|-------|---------|
+| `action` | `{ actionName, row, id, index, displayIndex }` |
+| `cellValueChanged` | `{ oldValue, newValue, columnId, row }` |
+| `rowSelected` / `rowDeselected` | `{ row }` |
+| `rowClicked` | `{ row, id, index, displayIndex }` |
+| `rowDragged` | `{ row, id, targetIndex, rows, dropType, targetParentId }` |
+| `columnMoved` | `{ toIndex, columnId, columnsOrder }` |
+| `onColumnStateChanged` | `{ changeType, columnStates, breakpoint }` |
+| `filterChanged` / `sortChanged` | Filter model / Sort array |
+
+---
 
 ## WeWeb Component Architecture
 
-This is a WeWeb custom element component built with Vue.js and configured using the WeWeb CLI framework.
-
-### Project Structure
-- `src/wwElement.vue` - Main Vue component with template, script, and scoped SCSS styling
-- `ww-config.js` - WeWeb element configuration defining editor properties and settings
-- `package.json` - Contains WeWeb CLI dependency and build/serve scripts
-
-### Component Architecture
 - **Props**: Component receives `content` object prop containing all configurable properties
-- **Configuration**: Element properties are defined in `ww-config.js` and accessed via `props.content.propertyName`
+- **Configuration**: Element properties defined in `ww-config.js`, accessed via `props.content.propertyName`
 - **Styling**: Uses scoped SCSS with Vue single-file component structure
-- **WeWeb Integration**: Element integrates with WeWeb editor through configuration schema
 
 ## CRITICAL REQUIREMENTS
 
