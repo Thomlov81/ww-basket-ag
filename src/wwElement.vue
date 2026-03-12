@@ -83,6 +83,7 @@ import {
   nextTick,
   ref,
   reactive,
+  onBeforeUnmount,
 } from "vue";
 import { AgGridVue } from "ag-grid-vue3";
 import {
@@ -165,6 +166,19 @@ export default {
     const lastExternalHeight = ref(0);
     const measuredNaturalHeight = ref(null);
     let borderCorrection = 0;
+
+    // Tree expand/collapse animation state
+    const isTreeAnimating = ref(false);
+    let treeAnimationTimer = null;
+    const TREE_ANIMATION_DURATION = 400; // matches AG Grid's 0.4s row transition
+
+    // Cleanup tree animation timer on unmount
+    onBeforeUnmount(() => {
+      if (treeAnimationTimer) {
+        clearTimeout(treeAnimationTimer);
+        treeAnimationTimer = null;
+      }
+    });
 
     const measureGridHeight = () => {
       const root = gridRoot.value;
@@ -470,7 +484,18 @@ export default {
     };
 
     const onRowGroupOpened = () => {
-      setTimeout(measureGridHeight, 50);
+      if (treeAnimationTimer) clearTimeout(treeAnimationTimer);
+
+      isTreeAnimating.value = true;
+
+      // Measure target height immediately after DOM updates
+      nextTick(() => measureGridHeight());
+
+      // End animation state after AG Grid animation completes
+      treeAnimationTimer = setTimeout(() => {
+        isTreeAnimating.value = false;
+        measureGridHeight(); // Final measurement
+      }, TREE_ANIMATION_DURATION + 50);
     };
 
     // Helper to apply column overrides from external state
@@ -1029,6 +1054,7 @@ export default {
       measureGridHeight,
       onGridSizeChanged,
       onRowGroupOpened,
+      isTreeAnimating,
       gridRoot,
       /* wwEditor:start */
       createElement,
@@ -1055,6 +1081,7 @@ export default {
         editing: this.isEditing,
         "fill-mode": this.content?.layout === "fill",
         "has-settings-icon": !!this.content?.showSettingsIcon,
+        "tree-animating": this.isTreeAnimating,
       };
     },
     wrapperStyle() {
@@ -1496,7 +1523,11 @@ export default {
     style() {
       if (this.content?.layout === "auto") return {};
       if (this.content?.layout === "fill") {
-        return { height: this.fillContainerHeight || "400px" };
+        const baseStyle = { height: this.fillContainerHeight || "400px" };
+        if (this.isTreeAnimating) {
+          baseStyle.transition = 'height 0.4s ease-out';
+        }
+        return baseStyle;
       }
       return {
         height: this.content?.height || "400px",
@@ -2250,6 +2281,13 @@ export default {
   &.fill-mode {
     display: block;
     overflow: hidden;
+  }
+
+  // Tree expand/collapse animation - hide scrollbars during transition
+  &.tree-animating {
+    :deep(.ag-body-viewport) {
+      overflow: hidden !important;
+    }
   }
 
   // Settings icon button
