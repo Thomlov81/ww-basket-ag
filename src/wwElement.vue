@@ -1106,45 +1106,43 @@ export default {
       const editableCursor = this.content?.editableCellCursor;
       const nonEditableCursor = this.content?.nonEditableCellCursor;
 
-      // Add CSS classes for targeting cells with hover/selection overlays + loading
-      {
+      // Add CSS classes for targeting cells with hover/selection overlays
+      if (editableBg || nonEditableBg) {
         const existingCellClass = definition.cellClass;
         definition.cellClass = (params) => {
-          const classes = [];
+          const isEditable =
+            typeof params.colDef?.editable === "function"
+              ? params.colDef.editable(params)
+              : !!params.colDef?.editable ||
+                params.colDef?.cellRenderer === "WewebCellRenderer" ||
+                params.colDef?.cellRenderer === "GroupCellRenderer";
 
-          // Resolve base class
+          const bgClass = isEditable
+            ? "ww-cell-editable"
+            : "ww-cell-non-editable";
+
           if (existingCellClass) {
             const existing =
               typeof existingCellClass === "function"
                 ? existingCellClass(params)
                 : existingCellClass;
-            if (existing) {
-              if (Array.isArray(existing)) classes.push(...existing);
-              else classes.push(existing);
-            }
+            return existing ? [existing, bgClass] : bgClass;
           }
-
-          // Editable/non-editable class for hover/selection overlays
-          if (editableBg || nonEditableBg) {
-            const isEditable =
-              typeof params.colDef?.editable === "function"
-                ? params.colDef.editable(params)
-                : !!params.colDef?.editable ||
-                  params.colDef?.cellRenderer === "WewebCellRenderer" ||
-                  params.colDef?.cellRenderer === "GroupCellRenderer";
-            classes.push(isEditable ? "ww-cell-editable" : "ww-cell-non-editable");
-          }
-
-          // Loading class (text-only opacity via CSS)
-          const loadingFormula = params.colDef?._loadingFormula;
-          if (loadingFormula) {
-            const isLoading = !!this.resolveMappingFormula(loadingFormula, params.data);
-            classes.push(isLoading ? "ww-cell-loading" : "ww-cell-not-loading");
-          }
-
-          return classes.length > 0 ? classes : null;
+          return bgClass;
         };
       }
+
+      // Loading classes via cellClassRules (additive — not overridden by column cellClass)
+      definition.cellClassRules = {
+        'ww-cell-loading': (params) => {
+          const formula = params.colDef?._loadingFormula;
+          return formula ? !!this.resolveMappingFormula(formula, params.data) : false;
+        },
+        'ww-cell-not-loading': (params) => {
+          const formula = params.colDef?._loadingFormula;
+          return formula ? !this.resolveMappingFormula(formula, params.data) : false;
+        },
+      };
 
       // Inline cellStyle for backgroundColor + cursor (skip drag column)
       if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
