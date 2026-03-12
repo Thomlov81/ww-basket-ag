@@ -1132,16 +1132,22 @@ export default {
         };
       }
 
-      // Inline cellStyle for backgroundColor + cursor (skip drag column)
-      if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
-        definition.cellStyle = (params) => {
+      // Loading effect config
+      const loadingOpacity = this.content?.loadingOpacity ?? 0.3;
+      const loadingTransition = this.content?.loadingTransitionDuration ?? 300;
+
+      // Inline cellStyle for backgroundColor + cursor + loading effect
+      definition.cellStyle = (params) => {
+        const style = {};
+
+        // Editable/non-editable visual differentiation
+        if (editableBg || nonEditableBg || editableCursor || nonEditableCursor) {
           const isEditable =
             typeof params.colDef?.editable === "function"
               ? params.colDef.editable(params)
               : !!params.colDef?.editable ||
                 params.colDef?.cellRenderer === "WewebCellRenderer" ||
                 params.colDef?.cellRenderer === "GroupCellRenderer";
-          const style = {};
           if (isEditable) {
             if (editableBg) style.backgroundColor = editableBg;
             if (editableCursor) style.cursor = editableCursor;
@@ -1149,9 +1155,23 @@ export default {
             if (nonEditableBg) style.backgroundColor = nonEditableBg;
             if (nonEditableCursor) style.cursor = nonEditableCursor;
           }
-          return Object.keys(style).length > 0 ? style : null;
-        };
-      }
+        }
+
+        // Loading effect
+        const loadingFormula = params.colDef?._loadingFormula;
+        if (loadingFormula) {
+          const isLoading = !!this.resolveMappingFormula(loadingFormula, params.data);
+          style.transition = `opacity ${loadingTransition}ms ease`;
+          if (isLoading) {
+            style.opacity = loadingOpacity;
+            style.pointerEvents = 'none';
+          } else {
+            style.opacity = 1;
+          }
+        }
+
+        return Object.keys(style).length > 0 ? style : null;
+      };
 
       if (this.content?.useDynamicStyleHeader) {
         definition.headerStyle = this.getHeaderStyle;
@@ -1281,6 +1301,7 @@ export default {
           ...(col?.aggFunc && col.aggFunc !== "none"
             ? { aggFunc: col.aggFunc }
             : {}),
+          _loadingFormula: col?.useLoadingFormula && col?.loadingFormula ? col.loadingFormula : null,
         };
 
         switch (col?.cellDataType) {

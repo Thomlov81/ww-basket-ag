@@ -119,6 +119,11 @@ export default {
         ],
       },
       {
+        label: "Loading Effect",
+        isCollapsible: true,
+        properties: ["loadingOpacity", "loadingTransitionDuration"],
+      },
+      {
         label: "Menu",
         isCollapsible: true,
         properties: ["menuTextColor", "menuBackgroundColor"],
@@ -1836,6 +1841,24 @@ export default {
                   !array?.item?.editable ||
                   !array?.item?.useEditableFormula,
               },
+              useLoadingFormula: {
+                label: "Loading",
+                type: "OnOff",
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image",
+              },
+              loadingFormula: {
+                label: "Loading condition",
+                type: "Formula",
+                options: {
+                  template: wwLib.wwUtils.getDataFromCollection(content.rowData)?.[0],
+                },
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image" ||
+                  !array?.item?.useLoadingFormula,
+              },
               filter: {
                 label: "Filter",
                 type: "OnOff",
@@ -2028,6 +2051,8 @@ export default {
                   "editable",
                   "useEditableFormula",
                   "editableFormula",
+                  "useLoadingFormula",
+                  "loadingFormula",
                   "filter",
                   "sortable",
                 ],
@@ -2671,6 +2696,40 @@ export default {
       bindingValidation: {
         type: "string",
         tooltip: "Valid values: solid | dashed | dotted | double",
+      },
+      /* wwEditor:end */
+    },
+    loadingOpacity: {
+      label: { en: "Loading Opacity" },
+      type: "Number",
+      section: "style",
+      options: { min: 0, max: 1, step: 0.1 },
+      defaultValue: 0.3,
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Opacity level applied to cells in loading state. 0 = fully transparent, 1 = fully opaque.",
+      },
+      bindingValidation: {
+        type: "number",
+        tooltip: "A number between 0 and 1",
+      },
+      /* wwEditor:end */
+    },
+    loadingTransitionDuration: {
+      label: { en: "Transition Duration (ms)" },
+      type: "Number",
+      section: "style",
+      options: { min: 0, max: 2000, step: 50 },
+      defaultValue: 300,
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Duration of the opacity transition when cells enter or exit loading state.",
+      },
+      bindingValidation: {
+        type: "number",
+        tooltip: "Duration in milliseconds (0-2000)",
       },
       /* wwEditor:end */
     },
