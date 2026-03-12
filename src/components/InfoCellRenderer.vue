@@ -10,7 +10,7 @@
             </wwLayoutItemContext>
         </div>
         <div class="info-cell-value">
-            <span class="info-cell-value-text">{{ displayValue }}</span>
+            <span ref="textEl" class="info-cell-value-text">{{ displayValue }}</span>
         </div>
     </div>
 </template>
@@ -28,6 +28,20 @@ export default {
         displayValue() {
             const val = this.params?.valueFormatted ?? this.params?.value;
             return val != null ? String(val) : "";
+        },
+    },
+    mounted() {
+        this.updateTitle();
+    },
+    updated() {
+        this.updateTitle();
+    },
+    methods: {
+        updateTitle() {
+            const el = this.$refs.textEl;
+            if (el) {
+                el.title = el.scrollWidth > el.clientWidth ? this.displayValue : "";
+            }
         },
     },
 };

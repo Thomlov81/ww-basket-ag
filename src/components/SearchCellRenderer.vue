@@ -2,7 +2,7 @@
     <div class="search-cell-renderer" :class="visibilityClass">
         <div class="search-cell-content" :style="contentStyle">
             <span v-if="hasValue" class="search-cell-value">{{ params.value }}</span>
-            <span v-else-if="params.searchPlaceholder" class="search-cell-placeholder" :style="placeholderStyle">
+            <span v-else-if="isEditable && params.searchPlaceholder" class="search-cell-placeholder" :style="placeholderStyle">
                 {{ params.searchPlaceholder }}
             </span>
             <wwLayoutItemContext
@@ -21,6 +21,7 @@
             </wwLayoutItemContext>
         </div>
         <div
+            v-if="isEditable"
             class="search-cell-icon"
             :style="iconStyle"
             v-html="iconHtml"
@@ -58,6 +59,13 @@ export default {
                 this.searchState.editingCell.colId === this.params.column?.getColId()
             );
         },
+        isEditable() {
+            const editable = this.params.colDef?.editable;
+            if (typeof editable === "function") {
+                return !!editable(this.params);
+            }
+            return !!editable;
+        },
         hasValue() {
             return this.params.value != null && this.params.value !== "";
         },
@@ -77,6 +85,7 @@ export default {
             };
         },
         contentStyle() {
+            if (!this.isEditable) return {};
             const paddingRight = this.params?.searchIconPaddingRight ?? 8;
             const cellPadding = this.params?.cellHorizontalPadding ?? 0;
             const iconRight = paddingRight - cellPadding;
