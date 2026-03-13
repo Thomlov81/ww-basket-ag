@@ -109,6 +109,7 @@ export default {
         properties: [
           "singleClickEdit",
           "selectAllOnEditStart",
+          "arrowKeyNavigation",
           "editableCellBackgroundColor",
           "nonEditableCellBackgroundColor",
           "editableCellCursor",
@@ -2531,6 +2532,22 @@ export default {
       bindingValidation: {
         type: "boolean",
         tooltip: "True to auto-select text on edit start",
+      },
+      /* wwEditor:end */
+    },
+    arrowKeyNavigation: {
+      type: "OnOff",
+      label: "Arrow Key Navigation",
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Enable arrow key navigation between editable cells. Up/Down moves to the next editable cell. Left/Right moves only when cursor is at the start or end of the text.",
+      },
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "True to enable arrow key navigation between editable cells",
       },
       /* wwEditor:end */
     },

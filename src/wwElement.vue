@@ -155,6 +155,7 @@ export default {
     const gridApi = shallowRef(null);
     const gridRoot = ref(null);
     const popupParent = wwLib.getFrontDocument().body;
+    const lastFocusedCell = ref(null);
 
     // Fill container mode refs
     const containerHeight = ref(0);
@@ -1071,6 +1072,7 @@ export default {
       onRowGroupOpened,
       isTreeAnimating,
       gridRoot,
+      lastFocusedCell,
       /* wwEditor:start */
       createElement,
       rawContent: inject("componentRawContent", {}),
@@ -1079,9 +1081,13 @@ export default {
   },
   mounted() {
     this.setupContainerObserver();
+    if (this.content?.arrowKeyNavigation) {
+      this._setupArrowNavListener();
+    }
   },
   beforeUnmount() {
     this.cleanupContainerObserver();
+    this._teardownArrowNavListener();
   },
   computed: {
     settingsIconButtonStyle() {
@@ -1114,6 +1120,63 @@ export default {
             ? `-${this.content?.cellAlignment || "left"}`
             : null,
       };
+
+      // Arrow key navigation between editable cells
+      if (this.content?.arrowKeyNavigation) {
+        definition.suppressKeyboardEvent = (params) => {
+          if (!params.editing) return false;
+
+          const event = params.event;
+          const key = event.key;
+
+          if (key === 'ArrowUp' || key === 'ArrowDown') {
+            event.preventDefault();
+            const colId = params.column.getColId();
+            const direction = key === 'ArrowUp' ? 'up' : 'down';
+            const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
+            if (target) {
+              this.navigateToEditableCell(target);
+            }
+            return true;
+          }
+
+          if (key === 'ArrowLeft' || key === 'ArrowRight') {
+            const input = params.eGridCell?.querySelector('input');
+
+            // Boolean/checkbox cells or no input: always navigate
+            if (!input || input.type === 'checkbox') {
+              event.preventDefault();
+              const direction = key === 'ArrowLeft' ? 'left' : 'right';
+              const colId = params.column.getColId();
+              const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
+              if (target) {
+                this.navigateToEditableCell(target);
+              }
+              return true;
+            }
+
+            const { selectionStart, selectionEnd, value } = input;
+            const isCollapsed = selectionStart === selectionEnd;
+            const atStart = isCollapsed && selectionStart === 0;
+            const atEnd = isCollapsed && selectionEnd === (value?.length ?? 0);
+
+            if ((key === 'ArrowLeft' && atStart) || (key === 'ArrowRight' && atEnd)) {
+              event.preventDefault();
+              const direction = key === 'ArrowLeft' ? 'left' : 'right';
+              const colId = params.column.getColId();
+              const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
+              if (target) {
+                this.navigateToEditableCell(target);
+              }
+              return true;
+            }
+
+            return false; // Let cursor move within input
+          }
+
+          return false;
+        };
+      }
 
       // Cell style for editable/non-editable visual differentiation
       const editableBg = this.content?.editableCellBackgroundColor;
@@ -1901,6 +1964,10 @@ export default {
       });
     },
     onCellEditingStarted(event) {
+      if (this.content?.arrowKeyNavigation) {
+        this.lastFocusedCell = { rowIndex: event.rowIndex, colId: event.column.getColId() };
+      }
+
       const colDef = event.column?.getColDef();
       const col = this.content?.columns?.find(
         (c) => c?.field === colDef?.field
@@ -1938,10 +2005,159 @@ export default {
         this._numericInputHandler = null;
       }
       setTimeout(() => {
-        if (!this.gridApi?.getEditingCells()?.length) {
+        if (!this.gridApi?.getEditingCells()?.length && !this._arrowNavActive) {
           this.gridApi?.clearFocusedCell();
         }
       }, 0);
+    },
+    findNextEditableCell(startRowIndex, startColId, direction) {
+      if (!this.gridApi) return null;
+
+      const allColumns = this.gridApi.getAllDisplayedColumns();
+      if (!allColumns?.length) return null;
+
+      // Build list of columns that can be text-edited
+      const editableColumns = [];
+      for (const col of allColumns) {
+        const colDef = col.getColDef();
+        const renderer = colDef?.cellRenderer;
+        if (
+          renderer === "ActionCellRenderer" ||
+          renderer === "ImageCellRenderer" ||
+          renderer === "WewebCellRenderer" ||
+          renderer === "GroupCellRenderer"
+        ) continue;
+        if (colDef?.editable === false || colDef?.editable == null) continue;
+        editableColumns.push(col);
+      }
+
+      if (!editableColumns.length) return null;
+
+      const totalRows = this.gridApi.getDisplayedRowCount();
+      const editableColIds = editableColumns.map(c => c.getColId());
+      const startColIndex = editableColIds.indexOf(startColId);
+
+      const isCellEditable = (rowIndex, col) => {
+        const rowNode = this.gridApi.getDisplayedRowAtIndex(rowIndex);
+        if (!rowNode || rowNode.group) return false;
+        const colDef = col.getColDef();
+        if (typeof colDef?.editable === 'function') {
+          return !!colDef.editable({ node: rowNode, data: rowNode.data, column: col, colDef });
+        }
+        return !!colDef?.editable;
+      };
+
+      if (direction === 'up' || direction === 'down') {
+        const step = direction === 'down' ? 1 : -1;
+        const col = allColumns.find(c => c.getColId() === startColId);
+        if (!col) return null;
+
+        let rowIndex = startRowIndex + step;
+        while (rowIndex >= 0 && rowIndex < totalRows) {
+          if (isCellEditable(rowIndex, col)) {
+            return { rowIndex, colId: startColId };
+          }
+          rowIndex += step;
+        }
+        return null;
+      }
+
+      if (direction === 'left' || direction === 'right') {
+        const step = direction === 'right' ? 1 : -1;
+        let colIdx = startColIndex + step;
+        let rowIndex = startRowIndex;
+        const maxIterations = totalRows * editableColumns.length;
+
+        for (let i = 0; i < maxIterations; i++) {
+          if (colIdx < 0) {
+            rowIndex--;
+            if (rowIndex < 0) return null;
+            colIdx = editableColumns.length - 1;
+          } else if (colIdx >= editableColumns.length) {
+            rowIndex++;
+            if (rowIndex >= totalRows) return null;
+            colIdx = 0;
+          }
+
+          if (isCellEditable(rowIndex, editableColumns[colIdx])) {
+            return { rowIndex, colId: editableColIds[colIdx] };
+          }
+          colIdx += step;
+        }
+        return null;
+      }
+
+      return null;
+    },
+    navigateToEditableCell(target) {
+      if (!target || !this.gridApi) return;
+
+      this._arrowNavActive = true;
+      this.gridApi.stopEditing();
+
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.gridApi.ensureIndexVisible(target.rowIndex);
+          this.gridApi.setFocusedCell(target.rowIndex, target.colId);
+          this.gridApi.startEditingCell({
+            rowIndex: target.rowIndex,
+            colKey: target.colId,
+          });
+          this.lastFocusedCell = target;
+          this._arrowNavActive = false;
+        }, 0);
+      });
+    },
+    _setupArrowNavListener() {
+      if (this._arrowNavHandler) return;
+
+      const gridRootEl = this.$refs.gridRoot;
+      if (!gridRootEl) return;
+
+      gridRootEl.setAttribute('tabindex', '0');
+      gridRootEl.style.outline = 'none';
+
+      this._arrowNavHandler = (e) => {
+        if (!this.content?.arrowKeyNavigation) return;
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape'].includes(e.key)) return;
+
+        const editingCells = this.gridApi?.getEditingCells();
+        if (editingCells?.length) return;
+
+        const focused = this.lastFocusedCell;
+        if (!focused) return;
+
+        if (e.key === 'Escape') {
+          this.lastFocusedCell = null;
+          this.gridApi?.clearFocusedCell();
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.gridApi?.startEditingCell({
+            rowIndex: focused.rowIndex,
+            colKey: focused.colId,
+          });
+          return;
+        }
+
+        e.preventDefault();
+        const direction = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[e.key];
+        const target = this.findNextEditableCell(focused.rowIndex, focused.colId, direction);
+        if (target) {
+          this.lastFocusedCell = target;
+          this.navigateToEditableCell(target);
+        }
+      };
+
+      gridRootEl.addEventListener('keydown', this._arrowNavHandler);
+    },
+    _teardownArrowNavListener() {
+      if (this._arrowNavHandler) {
+        this.$refs.gridRoot?.removeEventListener('keydown', this._arrowNavHandler);
+        this._arrowNavHandler = null;
+      }
     },
     onRowClicked(event) {
       this.$emit("trigger-event", {
@@ -2117,6 +2333,14 @@ export default {
     /* wwEditor:end */
   },
   watch: {
+    "content.arrowKeyNavigation"(newVal) {
+      if (newVal) {
+        this._setupArrowNavListener();
+      } else {
+        this._teardownArrowNavListener();
+        this.lastFocusedCell = null;
+      }
+    },
     // Watch fill mode height changes to mark internal resizes
     fillContainerHeight: {
       handler(newVal) {
