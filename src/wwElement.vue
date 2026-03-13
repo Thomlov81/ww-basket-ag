@@ -213,6 +213,8 @@ export default {
       const overflow = bodyViewport.scrollHeight - bodyViewport.clientHeight;
       if (overflow > 0 && overflow < 20 && measuredNaturalHeight.value !== null) {
         borderCorrection = overflow;
+      } else if (overflow <= 0) {
+        borderCorrection = 0;
       }
 
       measuredNaturalHeight.value = headerH + rowsH + hScrollH + paginationH + wrapperBorder + borderCorrection;
