@@ -86,7 +86,7 @@ export default {
         dropdownStyle() {
             if (!this.cellRect) return { display: 'none' };
             const style = {
-                position: 'absolute',
+                position: 'fixed',
                 left: this.cellRect.left + 'px',
                 zIndex: '9999',
             };
@@ -116,17 +116,16 @@ export default {
 
             const cell = this.$el.closest('.ag-cell');
             if (cell) {
-                // Teleport to .ww-datagrid — outside AG Grid's overflow containers
-                // but inside the Weweb preview area so wwElement renders correctly
-                const gridEl = cell.closest('.ww-datagrid');
-                if (gridEl) {
-                    this.teleportTarget = gridEl;
-                    const gridRect = gridEl.getBoundingClientRect();
+                // Teleport to document body with fixed positioning — immune to
+                // any ancestor overflow clipping (e.g. fill-mode overflow:hidden)
+                const frontDoc = wwLib.getFrontDocument();
+                if (frontDoc?.body) {
+                    this.teleportTarget = frontDoc.body;
                     const cellRect = cell.getBoundingClientRect();
                     this.cellRect = {
-                        top: cellRect.top - gridRect.top,
-                        bottom: cellRect.bottom - gridRect.top,
-                        left: cellRect.left - gridRect.left,
+                        top: cellRect.top,
+                        bottom: cellRect.bottom,
+                        left: cellRect.left,
                     };
                 }
 
