@@ -166,6 +166,7 @@ export default {
     const lastExternalHeight = ref(0);
     const measuredNaturalHeight = ref(null);
     let borderCorrection = 0;
+    let hScrollObserver = null;
 
     // Tree expand/collapse animation state
     const isTreeAnimating = ref(false);
@@ -177,6 +178,10 @@ export default {
       if (treeAnimationTimer) {
         clearTimeout(treeAnimationTimer);
         treeAnimationTimer = null;
+      }
+      if (hScrollObserver) {
+        hScrollObserver.disconnect();
+        hScrollObserver = null;
       }
     });
 
@@ -195,7 +200,8 @@ export default {
       const headerH = header.offsetHeight;
       const centerCols = root.querySelector('.ag-center-cols-container');
       const rowsH = centerCols?.offsetHeight || bodyViewport.scrollHeight;
-      const hScrollH = hScroll?.offsetHeight || 0;
+      const hScrollVisible = hScroll && !hScroll.classList.contains('ag-scrollbar-invisible');
+      const hScrollH = hScrollVisible ? hScroll.offsetHeight : 0;
       const paginationH = pagination?.offsetHeight || 0;
       const wrapperBorder = wrapper
         ? (wrapper.offsetHeight - wrapper.clientHeight)
@@ -642,6 +648,13 @@ export default {
 
       nextTick(() => requestAnimationFrame(measureGridHeight));
       setTimeout(measureGridHeight, 200);
+
+      // Watch for horizontal scrollbar visibility changes to re-measure height
+      const hScrollEl = gridRoot.value?.querySelector('.ag-body-horizontal-scroll');
+      if (hScrollEl) {
+        hScrollObserver = new MutationObserver(() => measureGridHeight());
+        hScrollObserver.observe(hScrollEl, { attributes: true, attributeFilter: ['class'] });
+      }
 
       // With suppressCellFocus, AG Grid won't auto-close editors when clicking
       // another cell. Use mousedown (fires before AG Grid's click handling) to
