@@ -1448,6 +1448,60 @@ export default {
               tooltipValueGetter: null,
             };
           }
+          case "dropdown": {
+            const rawOptions = Array.isArray(col?.dropdownOptions) ? col.dropdownOptions : [];
+            const resolvedOptions = rawOptions.map((item) => ({
+              value: this.resolveMappingFormula(col?.dropdownOptionsValueFormula, item) ?? item?.value,
+              name: this.resolveMappingFormula(col?.dropdownOptionsNameFormula, item) ?? item?.name,
+            }));
+            const valueList = resolvedOptions.map((o) => o.value);
+            const nameByValue = new Map(resolvedOptions.map((o) => [o.value, o.name]));
+            const placeholder = col?.dropdownPlaceholder || "";
+
+            const result = {
+              ...commonProperties,
+              headerName: effectiveHeaderName,
+              field: col?.field,
+              sortable: col?.sortable,
+              filter: col?.filter,
+              editable:
+                col?.editable && col?.useEditableFormula && col?.editableFormula
+                  ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
+                  : !!col?.editable,
+              cellEditor: "agRichSelectCellEditor",
+              cellEditorParams: {
+                values: valueList,
+                allowTyping: true,
+                filterList: true,
+                highlightMatch: true,
+                searchType: "matchAny",
+                valueListGap: 0,
+                formatValue: (value) =>
+                  nameByValue.has(value) ? nameByValue.get(value) : placeholder,
+              },
+              valueFormatter: (params) => {
+                if (params.value == null || !nameByValue.has(params.value)) return placeholder;
+                return nameByValue.get(params.value);
+              },
+            };
+
+            if (col?.field?.includes(".")) {
+              const fieldParts = col.field.split(".");
+              result.valueSetter = (params) => {
+                let obj = params.data;
+                for (let i = 0; i < fieldParts.length - 1; i++) {
+                  if (obj[fieldParts[i]] == null) obj[fieldParts[i]] = {};
+                  obj = obj[fieldParts[i]];
+                }
+                const lastKey = fieldParts[fieldParts.length - 1];
+                if (obj[lastKey] === params.newValue) return false;
+                obj[lastKey] = params.newValue;
+                return true;
+              };
+            }
+
+            return result;
+          }
           case "image": {
             return {
               ...commonProperties,

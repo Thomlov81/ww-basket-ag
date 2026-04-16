@@ -1583,6 +1583,7 @@ export default {
                     { value: "action", label: "Action" },
                     { value: "custom", label: "Custom" },
                     { value: "search", label: "Search" },
+                    { value: "dropdown", label: "Dropdown" },
                     { value: "info", label: "Info" },
                     { value: "treeGroup", label: "Tree Group" },
                   ],
@@ -1615,6 +1616,16 @@ export default {
                 editorOnly: true,
                 hidden: array?.item?.cellDataType !== "info",
               },
+              dropdownInfo: {
+                type: "InfoBox",
+                options: {
+                  variant: "info",
+                  content:
+                    "The row stores the Value. The matching Name is shown in the cell and list. Typing in the editor filters the list by Name.",
+                },
+                editorOnly: true,
+                hidden: array?.item?.cellDataType !== "dropdown",
+              },
               field: {
                 label: "Key",
                 type: "Text",
@@ -1627,7 +1638,8 @@ export default {
                   array?.item?.cellDataType === "action" ||
                   array?.item?.cellDataType === "image" ||
                   array?.item?.cellDataType === "custom" ||
-                  array?.item?.cellDataType === "search",
+                  array?.item?.cellDataType === "search" ||
+                  array?.item?.cellDataType === "dropdown",
               },
               displayLabelFormula: {
                 label: "Display value",
@@ -1640,7 +1652,8 @@ export default {
                   array?.item?.cellDataType === "image" ||
                   !array?.item?.useCustomLabel ||
                   array?.item?.cellDataType === "custom" ||
-                  array?.item?.cellDataType === "search",
+                  array?.item?.cellDataType === "search" ||
+                  array?.item?.cellDataType === "dropdown",
               },
               widthAlgo: {
                 type: "TextRadioGroup",
@@ -1993,6 +2006,75 @@ export default {
                 type: "FontFamily",
                 hidden: array?.item?.cellDataType !== "search",
               },
+              dropdownOptions: {
+                label: { en: "Options" },
+                type: "Array",
+                bindable: true,
+                defaultValue: [
+                  { value: "option1", name: "Option 1" },
+                  { value: "option2", name: "Option 2" },
+                ],
+                options: {
+                  expandable: true,
+                  getItemLabel(item) {
+                    return item?.name || item?.label || item?.value || "Option";
+                  },
+                  item: {
+                    type: "Object",
+                    defaultValue: { value: "", name: "" },
+                    options: {
+                      item: {
+                        value: { label: { en: "Value" }, type: "Text" },
+                        name: { label: { en: "Name" }, type: "Text" },
+                      },
+                    },
+                  },
+                },
+                hidden: array?.item?.cellDataType !== "dropdown",
+                /* wwEditor:start */
+                bindingValidation: {
+                  type: "array",
+                  tooltip:
+                    "Array of { value, name } — value is stored, name is displayed",
+                },
+                /* wwEditor:end */
+              },
+              dropdownOptionsValueFormula: {
+                label: { en: "Value Field" },
+                type: "Formula",
+                options: {
+                  template:
+                    Array.isArray(array?.item?.dropdownOptions) && array.item.dropdownOptions.length > 0
+                      ? array.item.dropdownOptions[0]
+                      : null,
+                },
+                defaultValue: { type: "f", code: "context.mapping?.['value']" },
+                hidden:
+                  array?.item?.cellDataType !== "dropdown" ||
+                  !Array.isArray(array?.item?.dropdownOptions) ||
+                  !array?.item?.dropdownOptions?.length,
+              },
+              dropdownOptionsNameFormula: {
+                label: { en: "Name Field" },
+                type: "Formula",
+                options: {
+                  template:
+                    Array.isArray(array?.item?.dropdownOptions) && array.item.dropdownOptions.length > 0
+                      ? array.item.dropdownOptions[0]
+                      : null,
+                },
+                defaultValue: { type: "f", code: "context.mapping?.['name']" },
+                hidden:
+                  array?.item?.cellDataType !== "dropdown" ||
+                  !Array.isArray(array?.item?.dropdownOptions) ||
+                  !array?.item?.dropdownOptions?.length,
+              },
+              dropdownPlaceholder: {
+                label: { en: "Placeholder" },
+                type: "Text",
+                defaultValue: "",
+                hidden: array?.item?.cellDataType !== "dropdown",
+              },
             },
             propertiesOrder: [
               "headerName",
@@ -2001,6 +2083,7 @@ export default {
               "info",
               "searchInfo",
               "infoInfo",
+              "dropdownInfo",
               "actionName",
               "actionLabel",
               "imageWidth",
@@ -2023,6 +2106,16 @@ export default {
                   "searchPlaceholderColor",
                   "searchPlaceholderFontSize",
                   "searchPlaceholderFontFamily",
+                ],
+              },
+              {
+                label: "Dropdown",
+                isCollapsible: true,
+                properties: [
+                  "dropdownOptions",
+                  "dropdownOptionsValueFormula",
+                  "dropdownOptionsNameFormula",
+                  "dropdownPlaceholder",
                 ],
               },
               ,
