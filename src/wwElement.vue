@@ -2075,6 +2075,7 @@ export default {
               const ctx = canvas.getContext("2d");
               ctx.font = font;
               let maxTextWidth = 0;
+              const measured = [];
               options.forEach((item) => {
                 const name = String(
                   this.resolveMappingFormula(
@@ -2085,43 +2086,53 @@ export default {
                     ""
                 );
                 const w = ctx.measureText(name).width;
+                measured.push({ name, w: Math.round(w) });
                 if (w > maxTextWidth) maxTextWidth = w;
               });
               const buffer = 48;
-              const targetWidth = Math.min(
+              const initialTarget = Math.min(
                 400,
                 Math.max(cellRect.width, Math.ceil(maxTextWidth) + buffer)
               );
-              [list, popup].forEach((el) => {
-                if (el) {
-                  el.style.setProperty(
-                    "width",
-                    `${targetWidth}px`,
-                    "important"
-                  );
-                  el.style.setProperty(
-                    "min-width",
-                    `${targetWidth}px`,
-                    "important"
-                  );
-                }
+              const applyWidth = (w) => {
+                [list, popup].forEach((el) => {
+                  if (el) {
+                    el.style.setProperty("width", `${w}px`, "important");
+                    el.style.setProperty("min-width", `${w}px`, "important");
+                  }
+                });
+              };
+              applyWidth(initialTarget);
+
+              // Second pass: now that rows are rendered, trust the DOM over
+              // canvas if it reports wider content (covers any decoration
+              // added by AG Grid beyond the resolved name string).
+              wwLib.getFrontWindow().requestAnimationFrame(() => {
+                const rows = list.querySelectorAll(".ag-rich-select-row");
+                let domMax = 0;
+                rows.forEach((row) => {
+                  if (row.scrollWidth > domMax) domMax = row.scrollWidth;
+                });
+                const finalTarget = Math.min(
+                  400,
+                  Math.max(cellRect.width, domMax + 8, initialTarget)
+                );
+                if (finalTarget !== initialTarget) applyWidth(finalTarget);
+                const listRect = list.getBoundingClientRect();
+                const deltaX = cellRect.right - listRect.right;
+                list.style.setProperty(
+                  "left",
+                  `${list.offsetLeft + deltaX}px`,
+                  "important"
+                );
+                console.log("[ww-basket-ag dropdown]", {
+                  cellWidth: cellRect.width,
+                  measured,
+                  initialTarget,
+                  domMax,
+                  finalTarget,
+                });
               });
-              console.log("[ww-basket-ag dropdown]", {
-                cellWidth: cellRect.width,
-                optionsCount: options.length,
-                maxTextWidth,
-                targetWidth,
-                font,
-                listEl: list,
-                popupEl: popup,
-              });
-              const listRect = list.getBoundingClientRect();
-              const deltaX = cellRect.right - listRect.right;
-              list.style.setProperty(
-                "left",
-                `${list.offsetLeft + deltaX}px`,
-                "important"
-              );
             }
           }
         }, 10);
