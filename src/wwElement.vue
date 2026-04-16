@@ -2061,15 +2061,9 @@ export default {
               // list clips rows with inline styles that defeat `scrollWidth`
               // and `max-content`. Measure option text widths directly via
               // canvas — independent of DOM layout and render timing.
-              const colDef = event.column?.getColDef?.() || {};
-              const editorParams = colDef.cellEditorParams || {};
-              const values = Array.isArray(editorParams.values)
-                ? editorParams.values
+              const options = Array.isArray(col?.dropdownOptions)
+                ? col.dropdownOptions
                 : [];
-              const formatValue =
-                typeof editorParams.formatValue === "function"
-                  ? editorParams.formatValue
-                  : (v) => v;
               const cellStyle = wwLib
                 .getFrontWindow()
                 .getComputedStyle(cellEl);
@@ -2084,9 +2078,16 @@ export default {
               const ctx = canvas.getContext("2d");
               ctx.font = font;
               let maxTextWidth = 0;
-              values.forEach((v) => {
-                const text = String(formatValue(v) ?? "");
-                const w = ctx.measureText(text).width;
+              options.forEach((item) => {
+                const name = String(
+                  this.resolveMappingFormula(
+                    col?.dropdownOptionsNameFormula,
+                    item
+                  ) ??
+                    item?.name ??
+                    ""
+                );
+                const w = ctx.measureText(name).width;
                 if (w > maxTextWidth) maxTextWidth = w;
               });
               const buffer = 48;
