@@ -2067,6 +2067,16 @@ export default {
             const list = wwLib
               .getFrontDocument()
               .querySelector(".ag-rich-select-list");
+            console.log("[ww-basket-ag dropdown-branch]", {
+              cellElFound: !!cellEl,
+              listFound: !!list,
+              allPopups: wwLib
+                .getFrontDocument()
+                .querySelectorAll(".ag-popup").length,
+              allLists: wwLib
+                .getFrontDocument()
+                .querySelectorAll(".ag-rich-select-list").length,
+            });
             if (cellEl && list) {
               const popup = list.closest(".ag-popup") || list;
               const cellRect = cellEl.getBoundingClientRect();
