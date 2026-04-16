@@ -2118,11 +2118,41 @@ export default {
                 if (finalTarget !== initialTarget) applyWidth(finalTarget);
                 const popupRect = popup.getBoundingClientRect();
                 const deltaX = cellRect.right - popupRect.right;
+                const before = {
+                  popupSameAsList: popup === list,
+                  popupTagClass:
+                    popup.tagName + "." + (popup.className || ""),
+                  popupInlineLeft: popup.style.left,
+                  popupComputedLeft: wwLib
+                    .getFrontWindow()
+                    .getComputedStyle(popup).left,
+                  popupTransform: wwLib
+                    .getFrontWindow()
+                    .getComputedStyle(popup).transform,
+                  popupRect: {
+                    left: popupRect.left,
+                    right: popupRect.right,
+                  },
+                  cellRect: {
+                    left: cellRect.left,
+                    right: cellRect.right,
+                  },
+                  deltaX,
+                  targetLeft: popup.offsetLeft + deltaX,
+                };
                 popup.style.setProperty(
                   "left",
                   `${popup.offsetLeft + deltaX}px`,
                   "important"
                 );
+                const after = {
+                  popupInlineLeft: popup.style.left,
+                  popupComputedLeft: wwLib
+                    .getFrontWindow()
+                    .getComputedStyle(popup).left,
+                  popupRect: popup.getBoundingClientRect().left,
+                };
+                console.log("[ww-basket-ag align]", { before, after });
               });
             }
           }
