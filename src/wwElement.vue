@@ -2615,25 +2615,15 @@ export default {
     }
 
     // Zero the input's own horizontal padding so it doesn't stack with the parent padding.
+    // Transparent bg so the cell's hover colour shows through instead of the UA default white.
     input.ag-input-field-input {
       padding: 0 !important;
+      background-color: transparent !important;
     }
 
     &.-center input { text-align: center; }
     &.-right  input { text-align: right;  }
     &.-left   input { text-align: left;   }
-  }
-
-  // The rich-select LIST is rendered in a popup at .ag-root-wrapper level (NOT inside the cell),
-  // so it must be a top-level selector. `:deep` keeps it scoped to this component root.
-  :deep(.ag-rich-select-list),
-  :deep(.ag-virtual-list-viewport.ag-rich-select-list) {
-    width: max-content !important;
-    min-width: 200px;
-    max-width: 400px;
-  }
-  :deep(.ag-rich-select-row) {
-    white-space: nowrap;
   }
 
   // Reserve space in the header for the settings icon
@@ -2810,6 +2800,25 @@ export default {
     }
   }
   /* wwEditor:end */
+}
+</style>
+
+<style lang="scss">
+// Global — the AG Grid rich-select popup is teleported to document.body
+// (see `popupParent` wiring at the top of this file), so Vue's `:deep()`
+// scoping cannot reach it. Rules are narrowly targeted to rich-select
+// classes so they no-op on pages without rich-select.
+.ag-rich-select-list,
+.ag-virtual-list-viewport.ag-rich-select-list {
+  // AG Grid sets width/min-width/max-width inline to the cell width in
+  // AgPickerField.renderAndPositionPicker → _setElementWidth. Those inline
+  // styles have no !important, so these rules win.
+  width: max-content !important;
+  min-width: 200px !important;
+  max-width: 400px !important;
+}
+.ag-rich-select-row {
+  white-space: nowrap;
 }
 </style>
 
