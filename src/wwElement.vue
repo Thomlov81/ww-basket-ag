@@ -2583,26 +2583,56 @@ export default {
     border-style: var(--ww-cell-editing-border-style, solid) !important;
   }
 
-  // Dropdown cell: match inline-edit padding and allow list to grow past cell width
+  // Dropdown editor: strip the inner picker chrome so only the user-configured
+  // cell edit border is visible, and make horizontal padding match the text editor.
   :deep(.ag-cell-dropdown.ag-cell-inline-editing) {
+    // Neutralize the AG Grid picker wrapper (border, radius, bg, min-height, focus ring).
+    // Cover idle, focus-within, and ag-picker-has-focus variants so the focus state
+    // doesn't re-introduce the border/shadow.
+    .ag-picker-field-wrapper,
+    .ag-picker-field-wrapper:focus-within,
+    .ag-picker-field-wrapper.ag-picker-has-focus,
     .ag-rich-select-value {
-      padding-left: calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
-      padding-right: calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
+      background-color: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      min-height: 0 !important;
+      overflow: visible !important;
     }
-    .ag-rich-select-field-input {
-      left: 0 !important;
-      right: 0 !important;
+
+    .ag-rich-select,
+    .ag-picker-field {
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
     }
+
+    // Horizontal padding lives on the flex parent so the caret aligns with the text-editor caret.
+    // Uses the user-configured --ww-cell-editing-border-width (CSS fallback only if unset).
+    .ag-rich-select-value {
+      padding: 0 calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
+    }
+
+    // Zero the input's own horizontal padding so it doesn't stack with the parent padding.
+    input.ag-input-field-input {
+      padding: 0 !important;
+    }
+
+    &.-center input { text-align: center; }
+    &.-right  input { text-align: right;  }
+    &.-left   input { text-align: left;   }
   }
 
-  // Let the open dropdown list grow wider than the cell so long names aren't clipped.
-  :deep(.ag-cell-dropdown .ag-rich-select-list),
-  :deep(.ag-cell-dropdown .ag-virtual-list-viewport.ag-rich-select-list) {
+  // The rich-select LIST is rendered in a popup at .ag-root-wrapper level (NOT inside the cell),
+  // so it must be a top-level selector. `:deep` keeps it scoped to this component root.
+  :deep(.ag-rich-select-list),
+  :deep(.ag-virtual-list-viewport.ag-rich-select-list) {
     width: max-content !important;
-    min-width: 100%;
+    min-width: 200px;
     max-width: 400px;
   }
-  :deep(.ag-cell-dropdown .ag-rich-select-row) {
+  :deep(.ag-rich-select-row) {
     white-space: nowrap;
   }
 
