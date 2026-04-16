@@ -2057,9 +2057,51 @@ export default {
               .querySelector(".ag-rich-select-list");
             if (cellEl && popup) {
               const cellRect = cellEl.getBoundingClientRect();
+              // Popup is teleported to document.body, and AG Grid's virtual
+              // list clips rows with inline styles that defeat `scrollWidth`
+              // and `max-content`. Measure option text widths directly via
+              // canvas — independent of DOM layout and render timing.
+              const colDef = event.column?.getColDef?.() || {};
+              const editorParams = colDef.cellEditorParams || {};
+              const values = Array.isArray(editorParams.values)
+                ? editorParams.values
+                : [];
+              const formatValue =
+                typeof editorParams.formatValue === "function"
+                  ? editorParams.formatValue
+                  : (v) => v;
+              const cellStyle = wwLib
+                .getFrontWindow()
+                .getComputedStyle(cellEl);
+              const font = `${cellStyle.fontStyle || "normal"} ${
+                cellStyle.fontWeight || "400"
+              } ${cellStyle.fontSize || "14px"} ${
+                cellStyle.fontFamily || "sans-serif"
+              }`;
+              const canvas = wwLib
+                .getFrontDocument()
+                .createElement("canvas");
+              const ctx = canvas.getContext("2d");
+              ctx.font = font;
+              let maxTextWidth = 0;
+              values.forEach((v) => {
+                const text = String(formatValue(v) ?? "");
+                const w = ctx.measureText(text).width;
+                if (w > maxTextWidth) maxTextWidth = w;
+              });
+              const buffer = 48;
+              const targetWidth = Math.min(
+                400,
+                Math.max(cellRect.width, Math.ceil(maxTextWidth) + buffer)
+              );
+              popup.style.setProperty(
+                "width",
+                `${targetWidth}px`,
+                "important"
+              );
               popup.style.setProperty(
                 "min-width",
-                `${cellRect.width}px`,
+                `${targetWidth}px`,
                 "important"
               );
               const popupRect = popup.getBoundingClientRect();
