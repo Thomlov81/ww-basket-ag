@@ -2028,12 +2028,24 @@ export default {
       const col = this.content?.columns?.find(
         (c) => c?.field === colDef?.field
       );
+      console.log("[ww-basket-ag editor-started]", {
+        field: colDef?.field,
+        colFound: !!col,
+        cellDataType: col?.cellDataType,
+        dropdownOptionsCount: Array.isArray(col?.dropdownOptions)
+          ? col.dropdownOptions.length
+          : "not-array",
+      });
 
       this.$nextTick(() => {
         setTimeout(() => {
           const input = this.$el?.querySelector(
             ".ag-cell-inline-editing input"
           );
+          console.log("[ww-basket-ag editor-after-delay]", {
+            inputFound: !!input,
+            cellDataType: col?.cellDataType,
+          });
           if (!input) return;
 
           if (this.content?.selectAllOnEditStart) {
