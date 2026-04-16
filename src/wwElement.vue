@@ -2028,24 +2028,12 @@ export default {
       const col = this.content?.columns?.find(
         (c) => c?.field === colDef?.field
       );
-      console.log("[ww-basket-ag editor-started]", {
-        field: colDef?.field,
-        colFound: !!col,
-        cellDataType: col?.cellDataType,
-        dropdownOptionsCount: Array.isArray(col?.dropdownOptions)
-          ? col.dropdownOptions.length
-          : "not-array",
-      });
 
       this.$nextTick(() => {
         setTimeout(() => {
           const input = this.$el?.querySelector(
             ".ag-cell-inline-editing input"
           );
-          console.log("[ww-basket-ag editor-after-delay]", {
-            inputFound: !!input,
-            cellDataType: col?.cellDataType,
-          });
           if (!input) return;
 
           if (this.content?.selectAllOnEditStart) {
@@ -2063,20 +2051,10 @@ export default {
           }
 
           if (col?.cellDataType === "dropdown") {
-            const cellEl = event.eGridCell;
+            const cellEl = input.closest(".ag-cell") || event.eGridCell;
             const list = wwLib
               .getFrontDocument()
               .querySelector(".ag-rich-select-list");
-            console.log("[ww-basket-ag dropdown-branch]", {
-              cellElFound: !!cellEl,
-              listFound: !!list,
-              allPopups: wwLib
-                .getFrontDocument()
-                .querySelectorAll(".ag-popup").length,
-              allLists: wwLib
-                .getFrontDocument()
-                .querySelectorAll(".ag-rich-select-list").length,
-            });
             if (cellEl && list) {
               const popup = list.closest(".ag-popup") || list;
               const cellRect = cellEl.getBoundingClientRect();
