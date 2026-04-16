@@ -1457,9 +1457,11 @@ export default {
             const valueList = resolvedOptions.map((o) => o.value);
             const nameByValue = new Map(resolvedOptions.map((o) => [o.value, o.name]));
             const placeholder = col?.dropdownPlaceholder || "";
+            const dropdownAlignmentClass = col?.cellAlignment ? `-${col.cellAlignment}` : "";
 
             const result = {
               ...commonProperties,
+              cellClass: `ag-cell-dropdown ${dropdownAlignmentClass}`.trim(),
               headerName: effectiveHeaderName,
               field: col?.field,
               sortable: col?.sortable,
@@ -2579,6 +2581,29 @@ export default {
     border-color: var(--ww-cell-editing-border-color) !important;
     border-width: var(--ww-cell-editing-border-width, 2px) !important;
     border-style: var(--ww-cell-editing-border-style, solid) !important;
+  }
+
+  // Dropdown cell: match inline-edit padding and allow list to grow past cell width
+  :deep(.ag-cell-dropdown.ag-cell-inline-editing) {
+    .ag-rich-select-value {
+      padding-left: calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
+      padding-right: calc(var(--ag-cell-horizontal-padding) - var(--ww-cell-editing-border-width, 2px)) !important;
+    }
+    .ag-rich-select-field-input {
+      left: 0 !important;
+      right: 0 !important;
+    }
+  }
+
+  // Let the open dropdown list grow wider than the cell so long names aren't clipped.
+  :deep(.ag-cell-dropdown .ag-rich-select-list),
+  :deep(.ag-cell-dropdown .ag-virtual-list-viewport.ag-rich-select-list) {
+    width: max-content !important;
+    min-width: 100%;
+    max-width: 400px;
+  }
+  :deep(.ag-cell-dropdown .ag-rich-select-row) {
+    white-space: nowrap;
   }
 
   // Reserve space in the header for the settings icon
