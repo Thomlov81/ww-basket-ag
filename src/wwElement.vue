@@ -2116,73 +2116,13 @@ export default {
                   Math.max(cellRect.width, domMax + 8, initialTarget)
                 );
                 if (finalTarget !== initialTarget) applyWidth(finalTarget);
-                const win = wwLib.getFrontWindow();
-                // Dump every descendant of .ag-popup with its position / rect
-                // so we can identify the actually-positioned element.
-                const descendants = [popup, ...popup.querySelectorAll("*")];
-                const positioned = descendants
-                  .map((el) => {
-                    const cs = win.getComputedStyle(el);
-                    const r = el.getBoundingClientRect();
-                    return {
-                      tag:
-                        el.tagName +
-                        "." +
-                        String(el.className || "")
-                          .split(" ")
-                          .filter((c) => c.startsWith("ag-"))
-                          .join("."),
-                      position: cs.position,
-                      left: cs.left,
-                      transform: cs.transform,
-                      rect: {
-                        l: Math.round(r.left),
-                        r: Math.round(r.right),
-                        w: Math.round(r.width),
-                      },
-                    };
-                  })
-                  .filter(
-                    (x) =>
-                      x.position === "absolute" ||
-                      x.position === "fixed" ||
-                      x.rect.w > 0
-                  );
-
                 const listRect = list.getBoundingClientRect();
-                const deltaX = cellRect.right - listRect.right;
-                const beforeLeft = list.style.left;
+                const shiftX = cellRect.right - listRect.right;
                 list.style.setProperty(
-                  "left",
-                  `${list.offsetLeft + deltaX}px`,
+                  "transform",
+                  `translateX(${shiftX}px)`,
                   "important"
                 );
-                const afterListRect = list.getBoundingClientRect();
-
-                console.log("[ww-basket-ag align2]", {
-                  cellRect: {
-                    l: Math.round(cellRect.left),
-                    r: Math.round(cellRect.right),
-                  },
-                  listBefore: {
-                    l: Math.round(listRect.left),
-                    r: Math.round(listRect.right),
-                  },
-                  listAfter: {
-                    l: Math.round(afterListRect.left),
-                    r: Math.round(afterListRect.right),
-                  },
-                  listOffsetLeft: list.offsetLeft,
-                  listOffsetParent:
-                    list.offsetParent &&
-                    list.offsetParent.tagName +
-                      "." +
-                      list.offsetParent.className,
-                  inlineLeftBefore: beforeLeft,
-                  inlineLeftAfter: list.style.left,
-                  computedLeftAfter: win.getComputedStyle(list).left,
-                  descendants: positioned,
-                });
               });
             }
           }
