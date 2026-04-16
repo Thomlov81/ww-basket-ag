@@ -2049,6 +2049,28 @@ export default {
             };
             input.addEventListener("beforeinput", this._numericInputHandler);
           }
+
+          if (col?.cellDataType === "dropdown") {
+            const cellEl = event.eGridCell;
+            const popup = wwLib
+              .getFrontDocument()
+              .querySelector(".ag-rich-select-list");
+            if (cellEl && popup) {
+              const cellRect = cellEl.getBoundingClientRect();
+              popup.style.setProperty(
+                "min-width",
+                `${cellRect.width}px`,
+                "important"
+              );
+              const popupRect = popup.getBoundingClientRect();
+              const deltaX = cellRect.right - popupRect.right;
+              popup.style.setProperty(
+                "left",
+                `${popup.offsetLeft + deltaX}px`,
+                "important"
+              );
+            }
+          }
         }, 10);
       });
     },
@@ -2812,9 +2834,9 @@ export default {
 .ag-virtual-list-viewport.ag-rich-select-list {
   // AG Grid sets width/min-width/max-width inline to the cell width in
   // AgPickerField.renderAndPositionPicker → _setElementWidth. Those inline
-  // styles have no !important, so these rules win.
+  // styles have no !important, so these rules win. `min-width` is set
+  // per-cell from JS in onCellEditingStarted to match the cell width.
   width: max-content !important;
-  min-width: 200px !important;
   max-width: 400px !important;
 }
 .ag-rich-select-row {
