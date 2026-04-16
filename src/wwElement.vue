@@ -2075,7 +2075,6 @@ export default {
               const ctx = canvas.getContext("2d");
               ctx.font = font;
               let maxTextWidth = 0;
-              const measured = [];
               options.forEach((item) => {
                 const name = String(
                   this.resolveMappingFormula(
@@ -2086,7 +2085,6 @@ export default {
                     ""
                 );
                 const w = ctx.measureText(name).width;
-                measured.push({ name, w: Math.round(w) });
                 if (w > maxTextWidth) maxTextWidth = w;
               });
               const buffer = 48;
@@ -2118,20 +2116,13 @@ export default {
                   Math.max(cellRect.width, domMax + 8, initialTarget)
                 );
                 if (finalTarget !== initialTarget) applyWidth(finalTarget);
-                const listRect = list.getBoundingClientRect();
-                const deltaX = cellRect.right - listRect.right;
-                list.style.setProperty(
+                const popupRect = popup.getBoundingClientRect();
+                const deltaX = cellRect.right - popupRect.right;
+                popup.style.setProperty(
                   "left",
-                  `${list.offsetLeft + deltaX}px`,
+                  `${popup.offsetLeft + deltaX}px`,
                   "important"
                 );
-                console.log("[ww-basket-ag dropdown]", {
-                  cellWidth: cellRect.width,
-                  measured,
-                  initialTarget,
-                  domMax,
-                  finalTarget,
-                });
               });
             }
           }
