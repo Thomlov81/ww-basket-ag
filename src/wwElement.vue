@@ -2052,15 +2052,12 @@ export default {
 
           if (col?.cellDataType === "dropdown") {
             const cellEl = event.eGridCell;
-            const popup = wwLib
+            const list = wwLib
               .getFrontDocument()
               .querySelector(".ag-rich-select-list");
-            if (cellEl && popup) {
+            if (cellEl && list) {
+              const popup = list.closest(".ag-popup") || list;
               const cellRect = cellEl.getBoundingClientRect();
-              // Popup is teleported to document.body, and AG Grid's virtual
-              // list clips rows with inline styles that defeat `scrollWidth`
-              // and `max-content`. Measure option text widths directly via
-              // canvas — independent of DOM layout and render timing.
               const options = Array.isArray(col?.dropdownOptions)
                 ? col.dropdownOptions
                 : [];
@@ -2095,21 +2092,34 @@ export default {
                 400,
                 Math.max(cellRect.width, Math.ceil(maxTextWidth) + buffer)
               );
-              popup.style.setProperty(
-                "width",
-                `${targetWidth}px`,
-                "important"
-              );
-              popup.style.setProperty(
-                "min-width",
-                `${targetWidth}px`,
-                "important"
-              );
-              const popupRect = popup.getBoundingClientRect();
-              const deltaX = cellRect.right - popupRect.right;
-              popup.style.setProperty(
+              [list, popup].forEach((el) => {
+                if (el) {
+                  el.style.setProperty(
+                    "width",
+                    `${targetWidth}px`,
+                    "important"
+                  );
+                  el.style.setProperty(
+                    "min-width",
+                    `${targetWidth}px`,
+                    "important"
+                  );
+                }
+              });
+              console.log("[ww-basket-ag dropdown]", {
+                cellWidth: cellRect.width,
+                optionsCount: options.length,
+                maxTextWidth,
+                targetWidth,
+                font,
+                listEl: list,
+                popupEl: popup,
+              });
+              const listRect = list.getBoundingClientRect();
+              const deltaX = cellRect.right - listRect.right;
+              list.style.setProperty(
                 "left",
-                `${popup.offsetLeft + deltaX}px`,
+                `${list.offsetLeft + deltaX}px`,
                 "important"
               );
             }
