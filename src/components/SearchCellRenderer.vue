@@ -1,8 +1,8 @@
 <template>
     <div class="search-cell-renderer" :class="visibilityClass">
         <div class="search-cell-content" :style="contentStyle">
-            <span v-if="hasValue" class="search-cell-value">{{ params.value }}</span>
-            <span v-else-if="isEditable && params.searchPlaceholder" class="search-cell-placeholder" :style="placeholderStyle">
+            <span v-if="hasValue && shouldShow" class="search-cell-value">{{ params.value }}</span>
+            <span v-else-if="shouldShow && isEditable && params.searchPlaceholder" class="search-cell-placeholder" :style="placeholderStyle">
                 {{ params.searchPlaceholder }}
             </span>
             <wwLayoutItemContext
@@ -68,6 +68,10 @@ export default {
         },
         hasValue() {
             return this.params.value != null && this.params.value !== "";
+        },
+        shouldShow() {
+            const fn = this.params?.shouldShowValue;
+            return typeof fn === "function" ? !!fn(this.params.data) : true;
         },
         placeholderStyle() {
             const style = {};

@@ -1855,6 +1855,26 @@ export default {
                   !array?.item?.editable ||
                   !array?.item?.useEditableFormula,
               },
+              useShowValueFormula: {
+                label: "Conditional show value",
+                type: "OnOff",
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image" ||
+                  array?.item?.cellDataType === "custom",
+              },
+              showValueFormula: {
+                label: "Show value condition",
+                type: "Formula",
+                options: {
+                  template: wwLib.wwUtils.getDataFromCollection(content.rowData)?.[0],
+                },
+                hidden:
+                  array?.item?.cellDataType === "action" ||
+                  array?.item?.cellDataType === "image" ||
+                  array?.item?.cellDataType === "custom" ||
+                  !array?.item?.useShowValueFormula,
+              },
               useLoadingFormula: {
                 label: "Loading",
                 type: "OnOff",
@@ -2145,6 +2165,8 @@ export default {
                   "editable",
                   "useEditableFormula",
                   "editableFormula",
+                  "useShowValueFormula",
+                  "showValueFormula",
                   "useLoadingFormula",
                   "loadingFormula",
                   "filter",

@@ -1374,6 +1374,11 @@ export default {
           _loadingFormula: col?.useLoadingFormula && col?.loadingFormula ? col.loadingFormula : null,
         };
 
+        const showValueFn =
+          col?.useShowValueFormula && col?.showValueFormula
+            ? (data) => !!this.resolveMappingFormula(col.showValueFormula, data)
+            : null;
+
         switch (col?.cellDataType) {
           case "action": {
             return {
@@ -1424,6 +1429,7 @@ export default {
                 searchPlaceholderFontFamily: col?.searchPlaceholderFontFamily,
                 cellHorizontalPadding: parseInt(this.content?.cellHorizontalPadding) || 0,
                 getIcon: this.getIcon,
+                shouldShowValue: showValueFn,
               },
               cellEditor: "SearchCellEditor",
               cellEditorParams: {
@@ -1482,6 +1488,7 @@ export default {
                   nameByValue.has(value) ? nameByValue.get(value) : placeholder,
               },
               valueFormatter: (params) => {
+                if (showValueFn && !showValueFn(params.data)) return '';
                 if (params.value == null || !nameByValue.has(params.value)) return placeholder;
                 return nameByValue.get(params.value);
               },
@@ -1533,12 +1540,16 @@ export default {
                   ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
                   : !!col?.editable,
             };
-            if (col?.useCustomLabel) {
+            if (showValueFn || col?.useCustomLabel) {
               infoResult.valueFormatter = (params) => {
-                return this.resolveMappingFormula(
-                  col?.displayLabelFormula,
-                  params.data
-                );
+                if (showValueFn && !showValueFn(params.data)) return '';
+                if (col?.useCustomLabel) {
+                  return this.resolveMappingFormula(
+                    col?.displayLabelFormula,
+                    params.data
+                  );
+                }
+                return params.value;
               };
             }
             return infoResult;
@@ -1591,12 +1602,16 @@ export default {
                 return isNaN(val) ? params.oldValue : val;
               };
             }
-            if (col?.useCustomLabel) {
+            if (showValueFn || col?.useCustomLabel) {
               result.valueFormatter = (params) => {
-                return this.resolveMappingFormula(
-                  col?.displayLabelFormula,
-                  params.data
-                );
+                if (showValueFn && !showValueFn(params.data)) return '';
+                if (col?.useCustomLabel) {
+                  return this.resolveMappingFormula(
+                    col?.displayLabelFormula,
+                    params.data
+                  );
+                }
+                return params.value;
               };
             }
             return result;
