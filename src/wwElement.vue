@@ -167,7 +167,9 @@ export default {
     const lastExternalHeight = ref(0);
     const measuredNaturalHeight = ref(null);
     let borderCorrection = 0;
+    let lastBorderCorrectionRaiseAt = 0;
     let hScrollObserver = null;
+    let measureRafId = null;
 
     // Tree expand/collapse animation state
     const isTreeAnimating = ref(false);
@@ -183,6 +185,10 @@ export default {
       if (hScrollObserver) {
         hScrollObserver.disconnect();
         hScrollObserver = null;
+      }
+      if (measureRafId !== null) {
+        cancelAnimationFrame(measureRafId);
+        measureRafId = null;
       }
     });
 
@@ -211,14 +217,36 @@ export default {
       // After the first DOM measurement is applied, check if the viewport still
       // overflows. Any small remaining overflow comes from internal borders/padding
       // not captured by the parts sum. Learn it as a correction.
+      // Reset is gated by a 500ms window after a raise to break the State A/B
+      // limit cycle that produces vertical-scrollbar flicker at the boundary.
       const overflow = bodyViewport.scrollHeight - bodyViewport.clientHeight;
       if (overflow > 0 && overflow < 20 && measuredNaturalHeight.value !== null) {
         borderCorrection = overflow;
-      } else if (overflow <= 0) {
-        borderCorrection = 0;
+        lastBorderCorrectionRaiseAt = performance.now();
+      } else if (overflow <= 0 && borderCorrection !== 0) {
+        if (performance.now() - lastBorderCorrectionRaiseAt > 500) {
+          borderCorrection = 0;
+        }
       }
 
-      measuredNaturalHeight.value = headerH + rowsH + hScrollH + paginationH + wrapperBorder + borderCorrection;
+      const next = Math.round(
+        headerH + rowsH + hScrollH + paginationH + wrapperBorder + borderCorrection
+      );
+      const HYSTERESIS_PX = 4;
+      if (
+        measuredNaturalHeight.value === null ||
+        Math.abs(next - measuredNaturalHeight.value) > HYSTERESIS_PX
+      ) {
+        measuredNaturalHeight.value = next;
+      }
+    };
+
+    const scheduleMeasureGridHeight = () => {
+      if (measureRafId !== null) return;
+      measureRafId = requestAnimationFrame(() => {
+        measureRafId = null;
+        measureGridHeight();
+      });
     };
 
     // Column overrides: shallow ref holding a deep copy of the initial overrides.
@@ -485,11 +513,11 @@ export default {
     const onColumnResized = (event) => {
       if (!event.finished || event.source !== "uiColumnResized") return;
       debouncedEmitColumnState("resized");
-      measureGridHeight();
+      scheduleMeasureGridHeight();
     };
 
     const onGridSizeChanged = () => {
-      measureGridHeight();
+      scheduleMeasureGridHeight();
     };
 
     const onRowGroupOpened = () => {
@@ -498,12 +526,12 @@ export default {
       isTreeAnimating.value = true;
 
       // Measure target height immediately after DOM updates
-      nextTick(() => measureGridHeight());
+      nextTick(() => scheduleMeasureGridHeight());
 
       // End animation state after AG Grid animation completes
       treeAnimationTimer = setTimeout(() => {
         isTreeAnimating.value = false;
-        measureGridHeight(); // Final measurement
+        measureGridHeight(); // Final measurement — direct, one-shot
       }, TREE_ANIMATION_DURATION + 50);
     };
 
@@ -650,12 +678,21 @@ export default {
       }
 
       nextTick(() => requestAnimationFrame(measureGridHeight));
-      setTimeout(measureGridHeight, 200);
+      setTimeout(scheduleMeasureGridHeight, 200);
 
-      // Watch for horizontal scrollbar visibility changes to re-measure height
+      // Watch for horizontal scrollbar visibility changes to re-measure height.
+      // Only react when ag-scrollbar-invisible actually flips — AG Grid mutates
+      // the class attribute for other reasons during layout passes, and
+      // re-measuring on those is what completes the flicker loop.
       const hScrollEl = gridRoot.value?.querySelector('.ag-body-horizontal-scroll');
       if (hScrollEl) {
-        hScrollObserver = new MutationObserver(() => measureGridHeight());
+        let lastInvisible = hScrollEl.classList.contains('ag-scrollbar-invisible');
+        hScrollObserver = new MutationObserver(() => {
+          const nowInvisible = hScrollEl.classList.contains('ag-scrollbar-invisible');
+          if (nowInvisible === lastInvisible) return;
+          lastInvisible = nowInvisible;
+          scheduleMeasureGridHeight();
+        });
         hScrollObserver.observe(hScrollEl, { attributes: true, attributeFilter: ['class'] });
       }
 
@@ -750,7 +787,7 @@ export default {
         setData(dataValue);
         scheduleVariableUpdate();
         // Recalculate height after AG Grid renders new rows
-        setTimeout(measureGridHeight, 100);
+        setTimeout(scheduleMeasureGridHeight, 100);
         // Force re-evaluation of cellStyle/cellClass for editable styling
         setTimeout(() => {
           gridApi.value?.refreshCells({ force: true });
@@ -1068,6 +1105,7 @@ export default {
       lastExternalHeight,
       measuredNaturalHeight,
       measureGridHeight,
+      scheduleMeasureGridHeight,
       onGridSizeChanged,
       onRowGroupOpened,
       isTreeAnimating,
@@ -1946,7 +1984,7 @@ export default {
           this.containerHeight = newHeight;
           this.initialContainerHeight = newHeight;
           this.lastExternalHeight = newHeight;
-          this.measureGridHeight();
+          this.scheduleMeasureGridHeight();
         };
         frontWindow?.addEventListener("resize", this.resizeHandler);
         return;
@@ -1980,13 +2018,14 @@ export default {
           }
 
           const heightDiff = Math.abs(settledHeight - this.lastExternalHeight);
+          const isFirst = this.lastExternalHeight === 0;
 
-          if (heightDiff > 10) {
+          if (heightDiff > 10 || isFirst) {
             this.lastExternalHeight = settledHeight;
             this.containerHeight = settledHeight;
             this.initialContainerHeight = settledHeight;
+            this.scheduleMeasureGridHeight();
           }
-          this.measureGridHeight();
         }, 100);
       });
 
@@ -2497,7 +2536,7 @@ export default {
           this.$nextTick(() => {
             setTimeout(() => {
               this.isInternalResize = false;
-              this.measureGridHeight();
+              this.scheduleMeasureGridHeight();
             }, 50);
           });
         }
