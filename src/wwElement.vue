@@ -1190,10 +1190,17 @@ export default {
           }
 
           if (key === 'ArrowLeft' || key === 'ArrowRight') {
-            const input = params.eGridCell?.querySelector('input');
+            // The keydown target is the focused editor input (SuppressKeyboardEventParams
+            // has no eGridCell). Only text-like inputs expose a caret via selectionStart.
+            const input = event.target;
+            const isTextInput =
+              input &&
+              input.tagName === 'INPUT' &&
+              input.type !== 'checkbox' &&
+              typeof input.selectionStart === 'number';
 
-            // Boolean/checkbox cells or no input: always navigate
-            if (!input || input.type === 'checkbox') {
+            // Boolean/checkbox cells or no caret-aware input: always navigate
+            if (!isTextInput) {
               event.preventDefault();
               const direction = key === 'ArrowLeft' ? 'left' : 'right';
               const colId = params.column.getColId();
