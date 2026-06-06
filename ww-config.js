@@ -273,6 +273,17 @@ export default {
       getTestEvent: "getRowClickedTestEvent",
     },
     {
+      name: "insertRow",
+      label: { en: "On Insert Key" },
+      event: {
+        row: null,
+        id: 0,
+        index: 0,
+        displayIndex: 0,
+      },
+      getTestEvent: "getInsertRowTestEvent",
+    },
+    {
       name: "rowDragStart",
       label: { en: "On Row Drag Start" },
       event: {
@@ -2647,6 +2658,22 @@ export default {
       bindingValidation: {
         type: "boolean",
         tooltip: "True to auto-select text on edit start",
+      },
+      /* wwEditor:end */
+    },
+    enableInsertRow: {
+      type: "OnOff",
+      label: "Insert Key → Emit Event",
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "When on, pressing the Insert key while a cell is focused emits the 'On Insert Key' event with the focused row. Enables cell focus so the keyboard event can fire.",
+      },
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "True to emit an event when the Insert key is pressed on a focused row",
       },
       /* wwEditor:end */
     },

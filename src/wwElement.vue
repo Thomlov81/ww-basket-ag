@@ -26,7 +26,7 @@
       enableCellTextSelection
       :singleClickEdit="content?.singleClickEdit || false"
       :stopEditingWhenCellsLoseFocus="true"
-      :suppressCellFocus="true"
+      :suppressCellFocus="!content.enableInsertRow"
       :tooltipShowDelay="750"
       :tooltipShowMode="'whenTruncated'"
       :row-drag-managed="!!content.rowReorder"
@@ -46,6 +46,7 @@
       @filter-changed="onFilterChanged"
       @sort-changed="onSortChanged"
       @row-clicked="onRowClicked"
+      @cell-key-down="onCellKeyDown"
       @row-drag-end="onRowDragged"
       @row-drag-enter="onRowDragEnter"
       @row-drag-move="onRowDragMove"
@@ -644,6 +645,16 @@ export default {
         updateColumnOverrides();
         debouncedEmitColumnState("initialized");
       } else if (!initialOverridesApplied.value) {
+        // No overrides yet: columnDefs is pinned to the "default" baseline, so
+        // apply the current breakpoint's config-based hide/order/width state
+        // explicitly (handles fresh mounts in tablet/mobile and config
+        // hideTablet/hideMobile with no overrides present).
+        const bp = props.content?.currentBreakpoint || "default";
+        gridApi.value.applyColumnState({
+          state: buildColumnStateForBreakpoint(bp),
+          applyOrder: true,
+        });
+
         const BINDING_TIMEOUT_MS = 500;
         let timeoutId = null;
 
@@ -1209,7 +1220,7 @@ export default {
               return true;
             }
 
-            return false; // Let cursor move within input
+            return true; // Suppress grid navigation; let the input keep/move the caret
           }
 
           return false;
@@ -1337,7 +1348,11 @@ export default {
       const allItems = this.content.columns.filter(
         (item) => item != null && item.cellDataType !== "treeGroup"
       );
-      const breakpoint = this.content?.currentBreakpoint || "default";
+      // Pinned to the "default" baseline so columnDefs identity does NOT change
+      // on breakpoint changes — per-breakpoint layout is applied via
+      // applyColumnState (currentBreakpoint watcher / onGridReady) to avoid
+      // re-instantiating header/cell renderer components and leaking DOM.
+      const breakpoint = "default";
       const overridesObj =
         this.columnOverridesForDefs &&
         typeof this.columnOverridesForDefs === "object"
@@ -2357,6 +2372,20 @@ export default {
         },
       });
     },
+    onCellKeyDown(event) {
+      if (!this.content?.enableInsertRow) return;
+      if (event?.event?.key !== "Insert") return;
+      event.event?.preventDefault?.();
+      this.$emit("trigger-event", {
+        name: "insertRow",
+        event: {
+          row: event.data,
+          id: event.node?.id,
+          index: event.node?.sourceRowIndex,
+          displayIndex: event.rowIndex,
+        },
+      });
+    },
     resetFilters() {
       if (!this.gridApi) return;
       this.gridApi.setFilterModel(null);
@@ -2481,6 +2510,16 @@ export default {
       };
     },
     getRowClickedTestEvent() {
+      const data = this.rowData;
+      if (!data || !data[0]) throw new Error("No data found");
+      return {
+        row: data[0],
+        id: 0,
+        index: 0,
+        displayIndex: 0,
+      };
+    },
+    getInsertRowTestEvent() {
       const data = this.rowData;
       if (!data || !data[0]) throw new Error("No data found");
       return {
