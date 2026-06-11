@@ -15,6 +15,7 @@
                     searchOpen: false,
                     searchText: '',
                     searchEditingCell: null,
+                    enterPressed: 0,
                 }"
             >
                 <wwElement v-bind="params.containerId" class="search-cell-flexbox"></wwElement>

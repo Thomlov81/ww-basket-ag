@@ -31,6 +31,7 @@
                         searchOpen: true,
                         searchText: searchText,
                         searchEditingCell: searchState.editingCell,
+                        enterPressed: searchState.enterPressed,
                     }"
                 >
                     <wwElement v-bind="params.containerId" class="search-editor-flexbox ag-custom-component-popup"></wwElement>
@@ -48,7 +49,7 @@ export default {
     name: "SearchCellEditor",
     inject: {
         searchState: {
-            default: () => ({ open: false, text: "", editingCell: null }),
+            default: () => ({ open: false, text: "", editingCell: null, enterPressed: 0 }),
         },
     },
     props: {

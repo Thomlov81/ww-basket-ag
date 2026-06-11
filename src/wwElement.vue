@@ -343,10 +343,24 @@ export default {
         readonly: true,
       });
 
+    // Monotonic counter bumped each time Enter is pressed in a search cell.
+    // The value is meaningless — its change is the signal no-code workflows bind to
+    // (e.g. "select the first search result"). Mirrored into searchState.enterPressed
+    // so it flows through the cell context into the embedded search component.
+    const { value: searchEnterPressed, setValue: setSearchEnterPressed } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: "searchEnterPressed",
+        type: "number",
+        defaultValue: 0,
+        readonly: true,
+      });
+
     const searchState = reactive({
       open: false,
       text: "",
       editingCell: null,
+      enterPressed: 0,
     });
 
     const onSearchEditingStarted = (cellInfo) => {
@@ -370,6 +384,14 @@ export default {
       searchState.open = false;
       searchState.text = "";
       searchState.editingCell = null;
+      // Intentionally do NOT reset enterPressed — keeping it monotonic guarantees
+      // every Enter is a distinct change, even across separate editing sessions.
+    };
+
+    const onSearchEnterPressed = () => {
+      const next = (searchState.enterPressed || 0) + 1;
+      searchState.enterPressed = next;
+      setSearchEnterPressed(next);
     };
 
     provide("searchState", searchState);
@@ -1106,6 +1128,7 @@ export default {
       onSearchEditingStarted,
       onSearchTextChanged,
       onSearchEditingStopped,
+      onSearchEnterPressed,
       // Fill container mode
       containerHeight,
       initialContainerHeight,
@@ -1512,6 +1535,21 @@ export default {
               filter: col?.filter,
               singleClickEdit: true,
               tooltipValueGetter: null,
+              // Capture Enter while the search editor is open so AG Grid doesn't
+              // stop editing / move focus down (which would close the dropdown).
+              // Instead we bump a counter that no-code workflows can react to
+              // (e.g. "select first result"). A column-level suppressKeyboardEvent
+              // overrides defaultColDef's, so search cells deliberately do not take
+              // part in cross-cell arrow navigation — arrow keys belong to the open
+              // results dropdown, not to jumping between grid cells.
+              suppressKeyboardEvent: (params) => {
+                if (params.editing && params.event?.key === "Enter") {
+                  params.event.preventDefault();
+                  this.onSearchEnterPressed();
+                  return true;
+                }
+                return false;
+              },
             };
           }
           case "dropdown": {
