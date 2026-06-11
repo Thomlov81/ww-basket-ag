@@ -1512,14 +1512,16 @@ export default {
               // Keyboard handling while the search editor is open. A column-level
               // suppressKeyboardEvent overrides defaultColDef's, so this is the single
               // place that decides every key for search cells.
-              //   - Enter / Up / Down: only captured while the results dropdown is "open"
-              //     (heuristic below). Suppress AG Grid and bump a monotonic counter
-              //     no-code workflows react to (select result / move highlight). Up/Down
-              //     traverse the dropdown, never jump grid cells. When the dropdown is
-              //     closed these fall through so the user can move rows / commit normally.
-              //   - Left/Right: reuse the shared caret-edge cell navigation (only when
-              //     arrowKeyNavigation is enabled), identical to other editable cells.
-              //   - Escape & others: fall through to native AG Grid handling (cancel/revert).
+              //   - Results OPEN (input differs from the cell's original value): capture
+              //     Enter (select) and Up/Down (traverse the results list), bumping the
+              //     monotonic counters no-code workflows react to.
+              //   - Otherwise behave like any other editable cell: delegate arrow keys to
+              //     the shared arrowKeyNavSuppress. This is required because singleClickEdit
+              //     keeps search cells in edit mode, so AG Grid's native (non-editing) row
+              //     navigation never fires — returning false would just let the input
+              //     swallow the arrow. Covers Up/Down when results are closed and
+              //     Left/Right (caret-edge) in all cases.
+              //   - Enter (results closed), Escape & others: native AG Grid handling.
               suppressKeyboardEvent: (params) => {
                 if (!params.editing) return false;
                 const key = params.event?.key;
@@ -1531,23 +1533,30 @@ export default {
                 const resultsOpen =
                   String(this.searchState?.text ?? "") !== String(original ?? "");
 
-                if (resultsOpen && key === "Enter") {
-                  params.event.preventDefault();
-                  this.onSearchEnterPressed();
-                  return true;
+                if (resultsOpen) {
+                  if (key === "Enter") {
+                    params.event.preventDefault();
+                    this.onSearchEnterPressed();
+                    return true;
+                  }
+                  if (key === "ArrowUp" || key === "ArrowDown") {
+                    params.event.preventDefault();
+                    this.onSearchArrowPressed(key === "ArrowUp" ? "up" : "down");
+                    return true;
+                  }
                 }
-                if (resultsOpen && (key === "ArrowUp" || key === "ArrowDown")) {
-                  params.event.preventDefault();
-                  this.onSearchArrowPressed(key === "ArrowUp" ? "up" : "down");
-                  return true;
-                }
+
                 if (
-                  (key === "ArrowLeft" || key === "ArrowRight") &&
-                  this.content?.arrowKeyNavigation
+                  this.content?.arrowKeyNavigation &&
+                  (key === "ArrowUp" ||
+                    key === "ArrowDown" ||
+                    key === "ArrowLeft" ||
+                    key === "ArrowRight")
                 ) {
                   return this.arrowKeyNavSuppress(params);
                 }
-                return false; // results closed (Enter/Up/Down) + Escape & others → native
+
+                return false; // Enter (results closed), Escape & others → native
               },
             };
           }
