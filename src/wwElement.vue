@@ -343,14 +343,33 @@ export default {
         readonly: true,
       });
 
-    // Monotonic counter bumped each time Enter is pressed in a search cell.
-    // The value is meaningless — its change is the signal no-code workflows bind to
-    // (e.g. "select the first search result"). Mirrored into searchState.enterPressed
-    // so it flows through the cell context into the embedded search component.
+    // Monotonic counters bumped on each Enter / Arrow Up / Arrow Down keypress in a
+    // search cell. The value is meaningless — its change is the signal no-code workflows
+    // bind to (e.g. "select the highlighted result", "move the highlight up/down").
+    // Mirrored into searchState so they flow through the cell context into the embedded
+    // search component.
     const { value: searchEnterPressed, setValue: setSearchEnterPressed } =
       wwLib.wwVariable.useComponentVariable({
         uid: props.uid,
         name: "searchEnterPressed",
+        type: "number",
+        defaultValue: 0,
+        readonly: true,
+      });
+
+    const { value: searchArrowUpPressed, setValue: setSearchArrowUpPressed } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: "searchArrowUpPressed",
+        type: "number",
+        defaultValue: 0,
+        readonly: true,
+      });
+
+    const { value: searchArrowDownPressed, setValue: setSearchArrowDownPressed } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: "searchArrowDownPressed",
         type: "number",
         defaultValue: 0,
         readonly: true,
@@ -361,6 +380,8 @@ export default {
       text: "",
       editingCell: null,
       enterPressed: 0,
+      arrowUpPressed: 0,
+      arrowDownPressed: 0,
     });
 
     const onSearchEditingStarted = (cellInfo) => {
@@ -384,15 +405,25 @@ export default {
       searchState.open = false;
       searchState.text = "";
       searchState.editingCell = null;
-      // Intentionally do NOT reset enterPressed — keeping it monotonic guarantees
-      // every Enter is a distinct change, even across separate editing sessions.
+      // Intentionally do NOT reset the key counters — keeping them monotonic guarantees
+      // every keypress is a distinct change, even across separate editing sessions.
     };
 
-    const onSearchEnterPressed = () => {
-      const next = (searchState.enterPressed || 0) + 1;
-      searchState.enterPressed = next;
-      setSearchEnterPressed(next);
+    // Bump a monotonic search-key counter on both the reactive state (for the cell
+    // context) and its mirrored component variable.
+    const bumpSearchSignal = (stateKey, setter) => {
+      const next = (searchState[stateKey] || 0) + 1;
+      searchState[stateKey] = next;
+      setter(next);
     };
+
+    const onSearchEnterPressed = () =>
+      bumpSearchSignal("enterPressed", setSearchEnterPressed);
+
+    const onSearchArrowPressed = (direction) =>
+      direction === "up"
+        ? bumpSearchSignal("arrowUpPressed", setSearchArrowUpPressed)
+        : bumpSearchSignal("arrowDownPressed", setSearchArrowDownPressed);
 
     provide("searchState", searchState);
 
@@ -1129,6 +1160,7 @@ export default {
       onSearchTextChanged,
       onSearchEditingStopped,
       onSearchEnterPressed,
+      onSearchArrowPressed,
       // Fill container mode
       containerHeight,
       initialContainerHeight,
@@ -1195,66 +1227,7 @@ export default {
 
       // Arrow key navigation between editable cells
       if (this.content?.arrowKeyNavigation) {
-        definition.suppressKeyboardEvent = (params) => {
-          if (!params.editing) return false;
-
-          const event = params.event;
-          const key = event.key;
-
-          if (key === 'ArrowUp' || key === 'ArrowDown') {
-            event.preventDefault();
-            const colId = params.column.getColId();
-            const direction = key === 'ArrowUp' ? 'up' : 'down';
-            const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
-            if (target) {
-              this.navigateToEditableCell(target);
-            }
-            return true;
-          }
-
-          if (key === 'ArrowLeft' || key === 'ArrowRight') {
-            // The keydown target is the focused editor input (SuppressKeyboardEventParams
-            // has no eGridCell). Only text-like inputs expose a caret via selectionStart.
-            const input = event.target;
-            const isTextInput =
-              input &&
-              input.tagName === 'INPUT' &&
-              input.type !== 'checkbox' &&
-              typeof input.selectionStart === 'number';
-
-            // Boolean/checkbox cells or no caret-aware input: always navigate
-            if (!isTextInput) {
-              event.preventDefault();
-              const direction = key === 'ArrowLeft' ? 'left' : 'right';
-              const colId = params.column.getColId();
-              const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
-              if (target) {
-                this.navigateToEditableCell(target);
-              }
-              return true;
-            }
-
-            const { selectionStart, selectionEnd, value } = input;
-            const isCollapsed = selectionStart === selectionEnd;
-            const atStart = isCollapsed && selectionStart === 0;
-            const atEnd = isCollapsed && selectionEnd === (value?.length ?? 0);
-
-            if ((key === 'ArrowLeft' && atStart) || (key === 'ArrowRight' && atEnd)) {
-              event.preventDefault();
-              const direction = key === 'ArrowLeft' ? 'left' : 'right';
-              const colId = params.column.getColId();
-              const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
-              if (target) {
-                this.navigateToEditableCell(target);
-              }
-              return true;
-            }
-
-            return true; // Suppress grid navigation; let the input keep/move the caret
-          }
-
-          return false;
-        };
+        definition.suppressKeyboardEvent = this.arrowKeyNavSuppress;
       }
 
       // Cell style for editable/non-editable visual differentiation
@@ -1535,18 +1508,33 @@ export default {
               filter: col?.filter,
               singleClickEdit: true,
               tooltipValueGetter: null,
-              // Capture Enter while the search editor is open so AG Grid doesn't
-              // stop editing / move focus down (which would close the dropdown).
-              // Instead we bump a counter that no-code workflows can react to
-              // (e.g. "select first result"). A column-level suppressKeyboardEvent
-              // overrides defaultColDef's, so search cells deliberately do not take
-              // part in cross-cell arrow navigation — arrow keys belong to the open
-              // results dropdown, not to jumping between grid cells.
+              // Keyboard handling while the search editor is open. A column-level
+              // suppressKeyboardEvent overrides defaultColDef's, so this is the single
+              // place that decides every key for search cells.
+              //   - Enter / Up / Down: suppress AG Grid and bump a monotonic counter
+              //     no-code workflows react to (select result / move highlight). Up/Down
+              //     traverse the results dropdown, never jump grid cells.
+              //   - Left/Right: reuse the shared caret-edge cell navigation (only when
+              //     arrowKeyNavigation is enabled), identical to other editable cells.
+              //   - Escape & others: fall through to native AG Grid handling (cancel/revert).
               suppressKeyboardEvent: (params) => {
-                if (params.editing && params.event?.key === "Enter") {
+                if (!params.editing) return false;
+                const key = params.event?.key;
+                if (key === "Enter") {
                   params.event.preventDefault();
                   this.onSearchEnterPressed();
                   return true;
+                }
+                if (key === "ArrowUp" || key === "ArrowDown") {
+                  params.event.preventDefault();
+                  this.onSearchArrowPressed(key === "ArrowUp" ? "up" : "down");
+                  return true;
+                }
+                if (
+                  (key === "ArrowLeft" || key === "ArrowRight") &&
+                  this.content?.arrowKeyNavigation
+                ) {
+                  return this.arrowKeyNavSuppress(params);
                 }
                 return false;
               },
@@ -1997,6 +1985,69 @@ export default {
     },
   },
   methods: {
+    // AG Grid suppressKeyboardEvent handler for cross-cell arrow navigation between
+    // editable cells. Used by defaultColDef (when arrowKeyNavigation is on) and reused
+    // by the search column for Left/Right caret-edge navigation.
+    arrowKeyNavSuppress(params) {
+      if (!params.editing) return false;
+
+      const event = params.event;
+      const key = event.key;
+
+      if (key === 'ArrowUp' || key === 'ArrowDown') {
+        event.preventDefault();
+        const colId = params.column.getColId();
+        const direction = key === 'ArrowUp' ? 'up' : 'down';
+        const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
+        if (target) {
+          this.navigateToEditableCell(target);
+        }
+        return true;
+      }
+
+      if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        // The keydown target is the focused editor input (SuppressKeyboardEventParams
+        // has no eGridCell). Only text-like inputs expose a caret via selectionStart.
+        const input = event.target;
+        const isTextInput =
+          input &&
+          input.tagName === 'INPUT' &&
+          input.type !== 'checkbox' &&
+          typeof input.selectionStart === 'number';
+
+        // Boolean/checkbox cells or no caret-aware input: always navigate
+        if (!isTextInput) {
+          event.preventDefault();
+          const direction = key === 'ArrowLeft' ? 'left' : 'right';
+          const colId = params.column.getColId();
+          const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
+          if (target) {
+            this.navigateToEditableCell(target);
+          }
+          return true;
+        }
+
+        const { selectionStart, selectionEnd, value } = input;
+        const isCollapsed = selectionStart === selectionEnd;
+        const atStart = isCollapsed && selectionStart === 0;
+        const atEnd = isCollapsed && selectionEnd === (value?.length ?? 0);
+
+        if ((key === 'ArrowLeft' && atStart) || (key === 'ArrowRight' && atEnd)) {
+          event.preventDefault();
+          const direction = key === 'ArrowLeft' ? 'left' : 'right';
+          const colId = params.column.getColId();
+          const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
+          if (target) {
+            this.navigateToEditableCell(target);
+          }
+          return true;
+        }
+
+        return true; // Suppress grid navigation; let the input keep/move the caret
+      }
+
+      return false;
+    },
     toggleExpand(nodeId) {
       if (!this.gridApi) return;
       const node = this.gridApi.getRowNode(nodeId);
