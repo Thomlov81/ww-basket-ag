@@ -1161,6 +1161,7 @@ export default {
       onSearchEditingStopped,
       onSearchEnterPressed,
       onSearchArrowPressed,
+      searchState,
       // Fill container mode
       containerHeight,
       initialContainerHeight,
@@ -1511,21 +1512,31 @@ export default {
               // Keyboard handling while the search editor is open. A column-level
               // suppressKeyboardEvent overrides defaultColDef's, so this is the single
               // place that decides every key for search cells.
-              //   - Enter / Up / Down: suppress AG Grid and bump a monotonic counter
+              //   - Enter / Up / Down: only captured while the results dropdown is "open"
+              //     (heuristic below). Suppress AG Grid and bump a monotonic counter
               //     no-code workflows react to (select result / move highlight). Up/Down
-              //     traverse the results dropdown, never jump grid cells.
+              //     traverse the dropdown, never jump grid cells. When the dropdown is
+              //     closed these fall through so the user can move rows / commit normally.
               //   - Left/Right: reuse the shared caret-edge cell navigation (only when
               //     arrowKeyNavigation is enabled), identical to other editable cells.
               //   - Escape & others: fall through to native AG Grid handling (cancel/revert).
               suppressKeyboardEvent: (params) => {
                 if (!params.editing) return false;
                 const key = params.event?.key;
-                if (key === "Enter") {
+
+                // Heuristic: the results dropdown is "open" once the input differs from
+                // the cell's original value (captured at edit start, immune to mid-edit
+                // row mutation).
+                const original = this.searchState?.editingCell?.currentValue;
+                const resultsOpen =
+                  String(this.searchState?.text ?? "") !== String(original ?? "");
+
+                if (resultsOpen && key === "Enter") {
                   params.event.preventDefault();
                   this.onSearchEnterPressed();
                   return true;
                 }
-                if (key === "ArrowUp" || key === "ArrowDown") {
+                if (resultsOpen && (key === "ArrowUp" || key === "ArrowDown")) {
                   params.event.preventDefault();
                   this.onSearchArrowPressed(key === "ArrowUp" ? "up" : "down");
                   return true;
@@ -1536,7 +1547,7 @@ export default {
                 ) {
                   return this.arrowKeyNavSuppress(params);
                 }
-                return false;
+                return false; // results closed (Enter/Up/Down) + Escape & others → native
               },
             };
           }
