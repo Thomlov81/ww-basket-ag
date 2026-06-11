@@ -1526,37 +1526,53 @@ export default {
                 if (!params.editing) return false;
                 const key = params.event?.key;
 
-                // Heuristic: the results dropdown is "open" once the input differs from
-                // the cell's original value (captured at edit start, immune to mid-edit
-                // row mutation).
+                // "Results open" = the visible input text differs from the cell's original
+                // value. Read the focused input live — searchState.text starts empty and
+                // only catches up once the user types, so it can't be used here.
                 const original = this.searchState?.editingCell?.currentValue;
-                const resultsOpen =
-                  String(this.searchState?.text ?? "") !== String(original ?? "");
+                const inputEl = params.event?.target;
+                const currentText =
+                  inputEl && typeof inputEl.value === "string"
+                    ? inputEl.value
+                    : this.searchState?.text ?? "";
+                const resultsOpen = String(currentText) !== String(original ?? "");
 
-                if (resultsOpen) {
-                  if (key === "Enter") {
+                if (key === "Enter") {
+                  if (resultsOpen) {
                     params.event.preventDefault();
-                    this.onSearchEnterPressed();
+                    this.onSearchEnterPressed(); // select highlighted result
                     return true;
                   }
-                  if (key === "ArrowUp" || key === "ArrowDown") {
-                    params.event.preventDefault();
-                    this.onSearchArrowPressed(key === "ArrowUp" ? "up" : "down");
-                    return true;
+                  return false; // no active search → native Enter (commit)
+                }
+
+                if (key === "ArrowUp" || key === "ArrowDown") {
+                  params.event.preventDefault();
+                  const direction = key === "ArrowUp" ? "up" : "down";
+                  if (resultsOpen) {
+                    this.onSearchArrowPressed(direction); // traverse the results list
+                  } else {
+                    // Move between grid rows. Active navigation (not native) because
+                    // singleClickEdit keeps search cells in edit mode. Independent of
+                    // arrowKeyNavigation — row traversal is intrinsic to search cells.
+                    const target = this.findNextEditableCell(
+                      params.node.rowIndex,
+                      params.column.getColId(),
+                      direction
+                    );
+                    if (target) this.navigateToEditableCell(target);
                   }
+                  return true;
                 }
 
                 if (
-                  this.content?.arrowKeyNavigation &&
-                  (key === "ArrowUp" ||
-                    key === "ArrowDown" ||
-                    key === "ArrowLeft" ||
-                    key === "ArrowRight")
+                  (key === "ArrowLeft" || key === "ArrowRight") &&
+                  this.content?.arrowKeyNavigation
                 ) {
-                  return this.arrowKeyNavSuppress(params);
+                  return this.arrowKeyNavSuppress(params); // caret-edge cell nav
                 }
 
-                return false; // Enter (results closed), Escape & others → native
+                return false; // Escape & others → native AG Grid
               },
             };
           }
