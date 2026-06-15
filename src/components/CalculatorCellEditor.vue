@@ -163,15 +163,29 @@ export default {
                 return style;
             }
             style.position = "fixed";
-            style.left = this.cellRect.left + "px";
-            style.minWidth = this.cellRect.width + "px";
+            style.minWidth = this.params?.calcPopupMinWidth || (this.cellRect.width + "px");
             style.zIndex = "9999";
+
+            // Horizontal alignment relative to the edited cell.
+            const align = this.params?.calcPopupAlign || "left";
+            const transforms = [];
+            if (align === "right") {
+                style.left = this.cellRect.right + "px";
+                transforms.push("translateX(-100%)");
+            } else if (align === "center") {
+                style.left = (this.cellRect.left + this.cellRect.width / 2) + "px";
+                transforms.push("translateX(-50%)");
+            } else {
+                style.left = this.cellRect.left + "px";
+            }
+
             if (this.popupAbove) {
                 style.top = (this.cellRect.top - 4) + "px";
-                style.transform = "translateY(-100%)";
+                transforms.push("translateY(-100%)");
             } else {
                 style.top = (this.cellRect.bottom + 4) + "px";
             }
+            if (transforms.length) style.transform = transforms.join(" ");
             return style;
         },
         headerStyle() {
@@ -193,6 +207,7 @@ export default {
                         top: rect.top,
                         bottom: rect.bottom,
                         left: rect.left,
+                        right: rect.right,
                         width: rect.width,
                     };
                 }

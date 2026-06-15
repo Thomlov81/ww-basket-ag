@@ -169,6 +169,8 @@ export default {
         label: "Calculator",
         isCollapsible: true,
         properties: [
+          "calcPopupMinWidth",
+          "calcPopupAlign",
           "calcPopupBackgroundColor",
           "calcPopupBorderColor",
           "calcPopupBorderRadius",
@@ -2912,6 +2914,56 @@ export default {
       bindingValidation: {
         type: "string",
         tooltip: "Popup title text",
+      },
+      /* wwEditor:end */
+    },
+    calcPopupMinWidth: {
+      type: "Length",
+      label: "Popup Min Width",
+      options: {
+        unitChoices: [
+          { value: "px", label: "px", min: 0, max: 600, default: true },
+          { value: "%", label: "%", min: 0, max: 100 },
+        ],
+        noRange: true,
+      },
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Minimum width of the calculator popup. Leave empty to match the edited cell width.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Min width (e.g., 180px)",
+      },
+      /* wwEditor:end */
+    },
+    calcPopupAlign: {
+      type: "TextSelect",
+      label: "Popup Alignment",
+      options: {
+        options: [
+          { value: "left", label: "Left" },
+          { value: "center", label: "Center" },
+          { value: "right", label: "Right" },
+        ],
+      },
+      defaultValue: "left",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Horizontal alignment of the popup relative to the edited cell.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Valid values: left | center | right",
       },
       /* wwEditor:end */
     },

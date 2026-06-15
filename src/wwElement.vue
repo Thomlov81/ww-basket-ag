@@ -1734,6 +1734,8 @@ export default {
                   calcPopupBackgroundColor: this.content?.calcPopupBackgroundColor,
                   calcPopupBorderColor: this.content?.calcPopupBorderColor,
                   calcPopupBorderRadius: this.content?.calcPopupBorderRadius,
+                  calcPopupMinWidth: this.content?.calcPopupMinWidth,
+                  calcPopupAlign: this.content?.calcPopupAlign,
                   calcPopupShadowEnabled: this.content?.calcPopupShadowEnabled,
                   calcHeaderBackgroundColor: this.content?.calcHeaderBackgroundColor,
                   calcHeaderTextColor: this.content?.calcHeaderTextColor,
