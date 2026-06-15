@@ -1438,6 +1438,27 @@ export default {
             ? (data) => !!this.resolveMappingFormula(col.showValueFormula, data)
             : null;
 
+        // Shared quick-calc editor params (used by number and info columns).
+        const calcEditorParams = {
+          calcHeaderText: this.content?.calcHeaderText,
+          calcIconType: this.content?.calcIconType,
+          getIcon: this.getIcon,
+          calcPopupBackgroundColor: this.content?.calcPopupBackgroundColor,
+          calcPopupBorderColor: this.content?.calcPopupBorderColor,
+          calcPopupBorderRadius: this.content?.calcPopupBorderRadius,
+          calcPopupMinWidth: this.content?.calcPopupMinWidth,
+          calcPopupAlign: this.content?.calcPopupAlign,
+          calcPopupShadowEnabled: this.content?.calcPopupShadowEnabled,
+          calcHeaderBackgroundColor: this.content?.calcHeaderBackgroundColor,
+          calcHeaderTextColor: this.content?.calcHeaderTextColor,
+          calcOperandColor: this.content?.calcOperandColor,
+          calcTotalColor: this.content?.calcTotalColor,
+          calcFontSize: this.content?.calcFontSize,
+          calcTotalFontWeight: this.content?.calcTotalFontWeight,
+          calcRowSpacing: this.content?.calcRowSpacing,
+          calcPadding: this.content?.calcPadding,
+        };
+
         switch (col?.cellDataType) {
           case "action": {
             return {
@@ -1664,6 +1685,12 @@ export default {
                   ? (params) => !!this.resolveMappingFormula(col?.editableFormula, params.data)
                   : !!col?.editable,
             };
+            // Quick-calc editor: type "2+1" / "256/12" and commit the result.
+            // Opt-in per column (default on). Plain values behave unchanged.
+            if (col?.enableCalculator !== false) {
+              infoResult.cellEditor = "CalculatorCellEditor";
+              infoResult.cellEditorParams = calcEditorParams;
+            }
             if (showValueFn || col?.useCustomLabel) {
               infoResult.valueFormatter = (params) => {
                 if (showValueFn && !showValueFn(params.data)) return '';
@@ -1729,25 +1756,7 @@ export default {
               // Opt-in per column (default on). Plain numbers behave unchanged.
               if (col?.enableCalculator !== false) {
                 result.cellEditor = "CalculatorCellEditor";
-                result.cellEditorParams = {
-                  calcHeaderText: this.content?.calcHeaderText,
-                  calcIconType: this.content?.calcIconType,
-                  getIcon: this.getIcon,
-                  calcPopupBackgroundColor: this.content?.calcPopupBackgroundColor,
-                  calcPopupBorderColor: this.content?.calcPopupBorderColor,
-                  calcPopupBorderRadius: this.content?.calcPopupBorderRadius,
-                  calcPopupMinWidth: this.content?.calcPopupMinWidth,
-                  calcPopupAlign: this.content?.calcPopupAlign,
-                  calcPopupShadowEnabled: this.content?.calcPopupShadowEnabled,
-                  calcHeaderBackgroundColor: this.content?.calcHeaderBackgroundColor,
-                  calcHeaderTextColor: this.content?.calcHeaderTextColor,
-                  calcOperandColor: this.content?.calcOperandColor,
-                  calcTotalColor: this.content?.calcTotalColor,
-                  calcFontSize: this.content?.calcFontSize,
-                  calcTotalFontWeight: this.content?.calcTotalFontWeight,
-                  calcRowSpacing: this.content?.calcRowSpacing,
-                  calcPadding: this.content?.calcPadding,
-                };
+                result.cellEditorParams = calcEditorParams;
               }
             }
             if (showValueFn || col?.useCustomLabel) {

@@ -175,6 +175,7 @@ export default {
           "calcPopupBorderColor",
           "calcPopupBorderRadius",
           "calcPopupShadowEnabled",
+          "calcIconType",
           "calcHeaderBackgroundColor",
           "calcHeaderTextColor",
           "calcOperandColor",
@@ -234,7 +235,7 @@ export default {
       {
         label: "Calculator",
         isCollapsible: true,
-        properties: ["calcHeaderText", "calcIconType"],
+        properties: ["calcHeaderText"],
       },
       "movableColumns",
       "resizableColumns",
@@ -1874,7 +1875,9 @@ export default {
                 type: "OnOff",
                 defaultValue: true,
                 bindable: true,
-                hidden: array?.item?.cellDataType !== "number",
+                hidden:
+                  array?.item?.cellDataType !== "number" &&
+                  array?.item?.cellDataType !== "info",
                 /* wwEditor:start */
                 propertyHelp: {
                   tooltip:
