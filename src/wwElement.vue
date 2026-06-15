@@ -85,6 +85,7 @@ import {
   ref,
   reactive,
   onBeforeUnmount,
+  getCurrentInstance,
 } from "vue";
 import { AgGridVue } from "ag-grid-vue3";
 import {
@@ -143,6 +144,12 @@ export default {
   setup(props, ctx) {
     const { resolveMappingFormula } = wwLib.wwFormula.useFormula();
     const { getIcon } = wwLib.useIcons();
+    const instance = getCurrentInstance();
+
+    // Queued cell to jump to after a search-result commit lands (rowData change).
+    // Set by Tab/arrow handlers; consumed by the rowData watcher so the jump runs
+    // after the commit's refresh and the new edit can't be cancelled.
+    const pendingSearchNav = ref(null);
 
     // Default gear SVG fallback for settings icon
     const DEFAULT_SETTINGS_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.416.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.445.443.919.587 1.416l1.473.295a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.416l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.416.587l-.295 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.416-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.416l-1.473-.295A1 1 0 0 1 1 10.68V9.32a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.416l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 3.2l1.25.834a6.957 6.957 0 0 1 1.416-.587l.294-1.473ZM13 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" clip-rule="evenodd" /></svg>';
@@ -857,6 +864,15 @@ export default {
         // Force re-evaluation of cellStyle/cellClass for editable styling
         setTimeout(() => {
           gridApi.value?.refreshCells({ force: true });
+          // A search-result commit just landed (workflow wrote rowData). Now that
+          // the refresh has run, jump to the queued next cell so the refresh can't
+          // cancel the freshly-entered edit. Event-driven — fires exactly when the
+          // commit lands, regardless of workflow speed.
+          if (pendingSearchNav.value) {
+            const target = pendingSearchNav.value;
+            pendingSearchNav.value = null;
+            instance?.proxy?.navigateToEditableCell(target);
+          }
         }, 150);
       },
       { immediate: true, deep: true }
@@ -1164,6 +1180,7 @@ export default {
       onSearchEnterPressed,
       onSearchArrowPressed,
       searchState,
+      pendingSearchNav,
       // Fill container mode
       containerHeight,
       initialContainerHeight,
@@ -1592,16 +1609,17 @@ export default {
                   (key === "ArrowLeft" || key === "ArrowRight") &&
                   this.content?.arrowKeyNavigation
                 ) {
-                  // When results are open, commit the highlighted result as we
-                  // leave the cell — but only when navigation actually fires
-                  // (caret at edge), handled inside arrowKeyNavSuppress.
+                  // When results are open and we actually leave the cell (caret at
+                  // edge, decided inside arrowKeyNavSuppress), commit the highlighted
+                  // result and queue the jump — it fires when the commit lands.
                   return this.arrowKeyNavSuppress(
                     params,
                     resultsOpen
                       ? {
-                          onBeforeNavigate: () => this.onSearchEnterPressed(),
-                          navigateDelay:
-                            Number(this.content?.searchCommitDelay) || 80,
+                          deferNavigate: (target) => {
+                            this.onSearchEnterPressed();
+                            this.queueSearchNav(target);
+                          },
                         }
                       : undefined
                   );
@@ -1609,25 +1627,18 @@ export default {
 
                 if (key === "Tab") {
                   if (resultsOpen) {
-                    // Commit the highlighted result, keep the editor (and its
-                    // result component) mounted for the delay so the async
-                    // workflow can write the value, then jump to the next/prev
-                    // editable cell. Tab → right, Shift+Tab → left.
+                    // Commit the highlighted result (editor stays open) and queue the
+                    // jump to the next/prev editable cell; the rowData watcher performs
+                    // it once the commit lands. Tab → right, Shift+Tab → left.
                     params.event.preventDefault();
-                    this.onSearchEnterPressed();
                     const direction = params.event.shiftKey ? "left" : "right";
                     const target = this.findNextEditableCell(
                       params.node.rowIndex,
                       params.column.getColId(),
                       direction
                     );
-                    if (target) {
-                      const delay = Number(this.content?.searchCommitDelay) || 80;
-                      setTimeout(
-                        () => this.navigateToEditableCell(target),
-                        delay
-                      );
-                    }
+                    this.onSearchEnterPressed();
+                    if (target) this.queueSearchNav(target);
                     return true;
                   }
                   return false; // no active results → native Tab
@@ -2104,16 +2115,15 @@ export default {
       const key = event.key;
 
       // Single exit point for leaving the cell. Runs only when we truly navigate
-      // (caret at edge / non-text input), never on mid-text caret moves. Lets the
-      // search column inject a commit (onBeforeNavigate) and a defer (navigateDelay)
-      // so the async commit lands while the editor is still mounted.
+      // (caret at edge / non-text input), never on mid-text caret moves. The search
+      // column passes deferNavigate to commit the highlighted result and queue the
+      // jump (so it fires when the commit lands) instead of navigating immediately.
       const navigate = (target) => {
-        if (options?.onBeforeNavigate) options.onBeforeNavigate();
-        if (options?.navigateDelay) {
-          setTimeout(() => this.navigateToEditableCell(target), options.navigateDelay);
-        } else {
-          this.navigateToEditableCell(target);
+        if (options?.deferNavigate) {
+          options.deferNavigate(target);
+          return;
         }
+        this.navigateToEditableCell(target);
       };
 
       if (key === 'ArrowUp' || key === 'ArrowDown') {
@@ -2531,6 +2541,16 @@ export default {
           this._arrowNavActive = false;
         }, 0);
       });
+    },
+    queueSearchNav(target) {
+      // Queue a jump that the rowData watcher performs once the search commit
+      // lands. Self-clears after 2s so an abandoned commit (no rowData change)
+      // can't trigger a stray jump on a later unrelated data update.
+      this.pendingSearchNav = target;
+      clearTimeout(this._pendingSearchNavTimer);
+      this._pendingSearchNavTimer = setTimeout(() => {
+        if (this.pendingSearchNav === target) this.pendingSearchNav = null;
+      }, 2000);
     },
     _setupArrowNavListener() {
       if (this._arrowNavHandler) return;

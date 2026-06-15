@@ -110,7 +110,6 @@ export default {
           "singleClickEdit",
           "selectAllOnEditStart",
           "arrowKeyNavigation",
-          "searchCommitDelay",
           "editableCellBackgroundColor",
           "nonEditableCellBackgroundColor",
           "editableCellCursor",
@@ -2737,23 +2736,6 @@ export default {
       bindingValidation: {
         type: "boolean",
         tooltip: "True to enable arrow key navigation between editable cells",
-      },
-      /* wwEditor:end */
-    },
-    searchCommitDelay: {
-      type: "Number",
-      label: "Search Commit Delay (ms)",
-      defaultValue: 80,
-      bindable: true,
-      /* wwEditor:start */
-      propertyHelp: {
-        tooltip:
-          "Time (ms) the search editor stays open after Tab/arrow navigation so the selected result can commit before moving to the next cell. Increase if commits are intermittently missed under a slow workflow.",
-      },
-      bindingValidation: {
-        type: "number",
-        tooltip:
-          "Delay before jumping cells after committing a search result",
       },
       /* wwEditor:end */
     },
