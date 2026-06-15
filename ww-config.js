@@ -165,6 +165,26 @@ export default {
           "actionLineHeight",
         ],
       },
+      {
+        label: "Calculator",
+        isCollapsible: true,
+        properties: [
+          "calcHeaderText",
+          "calcPopupBackgroundColor",
+          "calcPopupBorderColor",
+          "calcPopupBorderRadius",
+          "calcPopupShadow",
+          "calcHeaderBackgroundColor",
+          "calcHeaderTextColor",
+          "calcOperandColor",
+          "calcTotalColor",
+          "calcFontFamily",
+          "calcFontSize",
+          "calcTotalFontWeight",
+          "calcRowSpacing",
+          "calcPadding",
+        ],
+      },
     ],
     customSettingsPropertiesOrder: [
       "rowData",
@@ -1844,6 +1864,23 @@ export default {
                   array?.item?.cellDataType === "custom",
                 bindable: true,
               },
+              enableCalculator: {
+                label: "Enable quick calculator",
+                type: "OnOff",
+                defaultValue: true,
+                bindable: true,
+                hidden: array?.item?.cellDataType !== "number",
+                /* wwEditor:start */
+                propertyHelp: {
+                  tooltip:
+                    "Let users type a simple arithmetic expression (e.g. 2+1, 256/12) in this number cell and commit the evaluated result. Evaluated left-to-right, like an accounting calculator.",
+                },
+                bindingValidation: {
+                  type: "boolean",
+                  tooltip: "True to enable the quick calculator on this column",
+                },
+                /* wwEditor:end */
+              },
               useEditableFormula: {
                 label: "Conditional editable",
                 type: "OnOff",
@@ -2174,6 +2211,7 @@ export default {
                   "allowColumnOverride",
                   "showHeader",
                   "editable",
+                  "enableCalculator",
                   "useEditableFormula",
                   "editableFormula",
                   "useShowValueFormula",
@@ -2855,6 +2893,278 @@ export default {
       bindingValidation: {
         type: "string",
         tooltip: "Valid values: solid | dashed | dotted | double",
+      },
+      /* wwEditor:end */
+    },
+    calcHeaderText: {
+      type: "Text",
+      label: "Calculator Title",
+      defaultValue: "Kalkulator",
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip:
+          "Title shown in the quick-calculator popup when typing an arithmetic expression in a number cell.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Popup title text",
+      },
+      /* wwEditor:end */
+    },
+    calcPopupBackgroundColor: {
+      type: "Color",
+      label: "Popup Background",
+      options: { nullable: true },
+      defaultValue: "#ffffff",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Background color of the calculator popup.",
+      },
+      bindingValidation: {
+        markdown: "background-color",
+        type: "string",
+        cssSupports: "background-color",
+      },
+      /* wwEditor:end */
+    },
+    calcPopupBorderColor: {
+      type: "Color",
+      label: "Popup Border Color",
+      options: { nullable: true },
+      defaultValue: "#e5e7eb",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Border and divider color of the calculator popup.",
+      },
+      bindingValidation: {
+        markdown: "color",
+        type: "string",
+        cssSupports: "color",
+      },
+      /* wwEditor:end */
+    },
+    calcPopupBorderRadius: {
+      type: "Length",
+      label: "Popup Border Radius",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 40, default: true }],
+        noRange: true,
+      },
+      defaultValue: "8px",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Corner radius of the calculator popup.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Border radius (e.g., 8px)",
+      },
+      /* wwEditor:end */
+    },
+    calcPopupShadow: {
+      type: "Text",
+      label: "Popup Shadow",
+      defaultValue: "0 8px 24px rgba(0,0,0,0.12)",
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "CSS box-shadow applied to the calculator popup.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "A CSS box-shadow value",
+      },
+      /* wwEditor:end */
+    },
+    calcHeaderBackgroundColor: {
+      type: "Color",
+      label: "Header Background",
+      options: { nullable: true },
+      defaultValue: "#eef2ff",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Background color of the calculator popup header.",
+      },
+      bindingValidation: {
+        markdown: "background-color",
+        type: "string",
+        cssSupports: "background-color",
+      },
+      /* wwEditor:end */
+    },
+    calcHeaderTextColor: {
+      type: "Color",
+      label: "Header Text Color",
+      options: { nullable: true },
+      defaultValue: "#1e293b",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Text and icon color of the calculator popup header.",
+      },
+      bindingValidation: {
+        markdown: "color",
+        type: "string",
+        cssSupports: "color",
+      },
+      /* wwEditor:end */
+    },
+    calcOperandColor: {
+      type: "Color",
+      label: "Operand Text Color",
+      options: { nullable: true },
+      defaultValue: "#374151",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Color of the operand rows (operators and values) in the breakdown.",
+      },
+      bindingValidation: {
+        markdown: "color",
+        type: "string",
+        cssSupports: "color",
+      },
+      /* wwEditor:end */
+    },
+    calcTotalColor: {
+      type: "Color",
+      label: "Total Text Color",
+      options: { nullable: true },
+      defaultValue: "#111827",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Color of the running total row in the breakdown.",
+      },
+      bindingValidation: {
+        markdown: "color",
+        type: "string",
+        cssSupports: "color",
+      },
+      /* wwEditor:end */
+    },
+    calcFontFamily: {
+      type: "Text",
+      label: "Font Family",
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Font family used inside the calculator popup. Leave empty to inherit.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "A CSS font-family value",
+      },
+      /* wwEditor:end */
+    },
+    calcFontSize: {
+      type: "Length",
+      label: "Font Size",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 8, max: 32, default: true }],
+        noRange: true,
+      },
+      defaultValue: "14px",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Font size used inside the calculator popup.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Font size (e.g., 14px)",
+      },
+      /* wwEditor:end */
+    },
+    calcTotalFontWeight: {
+      type: "TextSelect",
+      label: "Total Font Weight",
+      options: {
+        options: [
+          { value: "400", label: "Regular (400)" },
+          { value: "500", label: "Medium (500)" },
+          { value: "600", label: "Semibold (600)" },
+          { value: "700", label: "Bold (700)" },
+        ],
+      },
+      defaultValue: "600",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Font weight of the running total row.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Valid values: 400 | 500 | 600 | 700",
+      },
+      /* wwEditor:end */
+    },
+    calcRowSpacing: {
+      type: "Length",
+      label: "Row Spacing",
+      options: {
+        unitChoices: [{ value: "px", label: "px", min: 0, max: 24, default: true }],
+        noRange: true,
+      },
+      defaultValue: "6px",
+      responsive: true,
+      bindable: true,
+      states: true,
+      classes: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Vertical spacing between breakdown rows.",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "Spacing (e.g., 6px)",
+      },
+      /* wwEditor:end */
+    },
+    calcPadding: {
+      type: "Text",
+      label: "Body Padding",
+      defaultValue: "8px 12px",
+      bindable: true,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Padding of the calculator popup body (CSS padding shorthand).",
+      },
+      bindingValidation: {
+        type: "string",
+        tooltip: "CSS padding (e.g., 8px 12px)",
       },
       /* wwEditor:end */
     },

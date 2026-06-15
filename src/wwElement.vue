@@ -108,6 +108,7 @@ import SearchCellRenderer from "./components/SearchCellRenderer.vue";
 import SearchCellEditor from "./components/SearchCellEditor.vue";
 import InfoCellRenderer from "./components/InfoCellRenderer.vue";
 import GroupCellRenderer from "./components/GroupCellRenderer.vue";
+import CalculatorCellEditor from "./components/CalculatorCellEditor.vue";
 
 LicenseManager.setLicenseKey("Using_this_{AG_Grid}_Enterprise_key_{AG-123489}_in_excess_of_the_licence_granted_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_changing_this_key_please_contact_info@ag-grid.com___{Ernestus_Skilt_og_Reklame_AS}_is_granted_a_{Single_Application}_Developer_License_for_the_application_{Ernestus_Portal}_only_for_{1}_Front-End_JavaScript_developer___All_Front-End_JavaScript_developers_working_on_{Ernestus_Portal}_need_to_be_licensed___{Ernestus_Portal}_has_not_been_granted_a_Deployment_License_Add-on___This_key_works_with_{AG_Grid}_Enterprise_versions_released_before_{13_March_2027}____[v3]_[01]_MTgwNDg5NjAwMDAwMA==2418b1c6e811e23619cd7bc958129240");
 
@@ -123,6 +124,7 @@ export default {
     SearchCellEditor,
     InfoCellRenderer,
     GroupCellRenderer,
+    CalculatorCellEditor,
   },
   props: {
     content: {
@@ -1723,6 +1725,27 @@ export default {
                 const val = Number(String(params.newValue).replace(',', '.'));
                 return isNaN(val) ? params.oldValue : val;
               };
+              // Quick-calc editor: type "2+1" / "256/12" and commit the result.
+              // Opt-in per column (default on). Plain numbers behave unchanged.
+              if (col?.enableCalculator !== false) {
+                result.cellEditor = "CalculatorCellEditor";
+                result.cellEditorParams = {
+                  calcHeaderText: this.content?.calcHeaderText,
+                  calcPopupBackgroundColor: this.content?.calcPopupBackgroundColor,
+                  calcPopupBorderColor: this.content?.calcPopupBorderColor,
+                  calcPopupBorderRadius: this.content?.calcPopupBorderRadius,
+                  calcPopupShadow: this.content?.calcPopupShadow,
+                  calcHeaderBackgroundColor: this.content?.calcHeaderBackgroundColor,
+                  calcHeaderTextColor: this.content?.calcHeaderTextColor,
+                  calcOperandColor: this.content?.calcOperandColor,
+                  calcTotalColor: this.content?.calcTotalColor,
+                  calcFontSize: this.content?.calcFontSize,
+                  calcFontFamily: this.content?.calcFontFamily,
+                  calcTotalFontWeight: this.content?.calcTotalFontWeight,
+                  calcRowSpacing: this.content?.calcRowSpacing,
+                  calcPadding: this.content?.calcPadding,
+                };
+              }
             }
             if (showValueFn || col?.useCustomLabel) {
               result.valueFormatter = (params) => {
@@ -2242,7 +2265,11 @@ export default {
           }
 
           if (col?.cellDataType === "number") {
-            const numericPattern = /^[\d\-\,\.]*$/;
+            // Allow arithmetic operators when the quick-calc editor is enabled.
+            const numericPattern =
+              col?.enableCalculator !== false
+                ? /^[\d\-\,\.\+\*\/xX×÷·\s]*$/
+                : /^[\d\-\,\.]*$/;
             this._numericInputHandler = (e) => {
               if (!numericPattern.test(e.data) && e.data) {
                 e.preventDefault();
