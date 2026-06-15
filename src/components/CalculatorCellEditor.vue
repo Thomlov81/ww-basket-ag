@@ -145,7 +145,10 @@ export default {
                 "--ww-calc-popup-bg": this.params?.calcPopupBackgroundColor || "#ffffff",
                 "--ww-calc-popup-border-color": this.params?.calcPopupBorderColor || "#e5e7eb",
                 "--ww-calc-popup-border-radius": this.params?.calcPopupBorderRadius || "8px",
-                "--ww-calc-popup-shadow": this.params?.calcPopupShadow || "0 8px 24px rgba(0,0,0,0.12)",
+                "--ww-calc-popup-shadow":
+                    this.params?.calcPopupShadowEnabled === false
+                        ? "none"
+                        : "0 8px 24px rgba(0,0,0,0.12)",
                 "--ww-calc-header-bg": this.params?.calcHeaderBackgroundColor || "#eef2ff",
                 "--ww-calc-header-color": this.params?.calcHeaderTextColor || "#1e293b",
                 "--ww-calc-operand-color": this.params?.calcOperandColor || "#374151",
@@ -155,9 +158,6 @@ export default {
                 "--ww-calc-row-spacing": this.params?.calcRowSpacing || "6px",
                 "--ww-calc-padding": this.params?.calcPadding || "8px 12px",
             };
-            if (this.params?.calcFontFamily) {
-                style["--ww-calc-font-family"] = this.params.calcFontFamily;
-            }
             if (!this.cellRect) {
                 style.visibility = "hidden";
                 return style;
@@ -275,7 +275,7 @@ function formatNb(value) {
     border: 1px solid var(--ww-calc-popup-border-color, #e5e7eb);
     border-radius: var(--ww-calc-popup-border-radius, 8px);
     box-shadow: var(--ww-calc-popup-shadow, 0 8px 24px rgba(0, 0, 0, 0.12));
-    font-family: var(--ww-calc-font-family, inherit);
+    font-family: inherit;
     font-size: var(--ww-calc-font-size, 14px);
     overflow: hidden;
     min-width: 180px;

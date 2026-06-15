@@ -169,16 +169,14 @@ export default {
         label: "Calculator",
         isCollapsible: true,
         properties: [
-          "calcHeaderText",
           "calcPopupBackgroundColor",
           "calcPopupBorderColor",
           "calcPopupBorderRadius",
-          "calcPopupShadow",
+          "calcPopupShadowEnabled",
           "calcHeaderBackgroundColor",
           "calcHeaderTextColor",
           "calcOperandColor",
           "calcTotalColor",
-          "calcFontFamily",
           "calcFontSize",
           "calcTotalFontWeight",
           "calcRowSpacing",
@@ -230,6 +228,11 @@ export default {
           "treeGroupDefaultExpanded",
           "treeAllowParentField",
         ],
+      },
+      {
+        label: "Calculator",
+        isCollapsible: true,
+        properties: ["calcHeaderText"],
       },
       "movableColumns",
       "resizableColumns",
@@ -2974,18 +2977,21 @@ export default {
       },
       /* wwEditor:end */
     },
-    calcPopupShadow: {
-      type: "Text",
+    calcPopupShadowEnabled: {
+      type: "OnOff",
       label: "Popup Shadow",
-      defaultValue: "0 8px 24px rgba(0,0,0,0.12)",
+      defaultValue: true,
+      responsive: true,
       bindable: true,
+      states: true,
+      classes: true,
       /* wwEditor:start */
       propertyHelp: {
-        tooltip: "CSS box-shadow applied to the calculator popup.",
+        tooltip: "Show a drop shadow under the calculator popup.",
       },
       bindingValidation: {
-        type: "string",
-        tooltip: "A CSS box-shadow value",
+        type: "boolean",
+        tooltip: "True to show a drop shadow",
       },
       /* wwEditor:end */
     },
@@ -3069,20 +3075,6 @@ export default {
       },
       /* wwEditor:end */
     },
-    calcFontFamily: {
-      type: "Text",
-      label: "Font Family",
-      bindable: true,
-      /* wwEditor:start */
-      propertyHelp: {
-        tooltip: "Font family used inside the calculator popup. Leave empty to inherit.",
-      },
-      bindingValidation: {
-        type: "string",
-        tooltip: "A CSS font-family value",
-      },
-      /* wwEditor:end */
-    },
     calcFontSize: {
       type: "Length",
       label: "Font Size",
@@ -3154,17 +3146,20 @@ export default {
       /* wwEditor:end */
     },
     calcPadding: {
-      type: "Text",
+      type: "Spacing",
       label: "Body Padding",
-      defaultValue: "8px 12px",
+      responsive: true,
       bindable: true,
+      states: true,
+      classes: true,
       /* wwEditor:start */
       propertyHelp: {
-        tooltip: "Padding of the calculator popup body (CSS padding shorthand).",
+        tooltip: "Padding of the calculator popup body.",
       },
       bindingValidation: {
+        markdown: "padding",
         type: "string",
-        tooltip: "CSS padding (e.g., 8px 12px)",
+        cssSupports: "padding",
       },
       /* wwEditor:end */
     },
