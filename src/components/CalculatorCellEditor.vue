@@ -289,6 +289,7 @@ function formatNb(value) {
     outline: none;
     padding: 0;
     padding-left: calc(var(--ag-cell-horizontal-padding, 8px) - var(--ww-cell-editing-border-width, 2px));
+    padding-right: calc(var(--ag-cell-horizontal-padding, 8px) - var(--ww-cell-editing-border-width, 2px));
     font: inherit;
     text-align: inherit;
     background-color: var(--ag-background-color, #fff);
