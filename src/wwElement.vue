@@ -1592,7 +1592,45 @@ export default {
                   (key === "ArrowLeft" || key === "ArrowRight") &&
                   this.content?.arrowKeyNavigation
                 ) {
-                  return this.arrowKeyNavSuppress(params); // caret-edge cell nav
+                  // When results are open, commit the highlighted result as we
+                  // leave the cell — but only when navigation actually fires
+                  // (caret at edge), handled inside arrowKeyNavSuppress.
+                  return this.arrowKeyNavSuppress(
+                    params,
+                    resultsOpen
+                      ? {
+                          onBeforeNavigate: () => this.onSearchEnterPressed(),
+                          navigateDelay:
+                            Number(this.content?.searchCommitDelay) || 80,
+                        }
+                      : undefined
+                  );
+                }
+
+                if (key === "Tab") {
+                  if (resultsOpen) {
+                    // Commit the highlighted result, keep the editor (and its
+                    // result component) mounted for the delay so the async
+                    // workflow can write the value, then jump to the next/prev
+                    // editable cell. Tab → right, Shift+Tab → left.
+                    params.event.preventDefault();
+                    this.onSearchEnterPressed();
+                    const direction = params.event.shiftKey ? "left" : "right";
+                    const target = this.findNextEditableCell(
+                      params.node.rowIndex,
+                      params.column.getColId(),
+                      direction
+                    );
+                    if (target) {
+                      const delay = Number(this.content?.searchCommitDelay) || 80;
+                      setTimeout(
+                        () => this.navigateToEditableCell(target),
+                        delay
+                      );
+                    }
+                    return true;
+                  }
+                  return false; // no active results → native Tab
                 }
 
                 return false; // Escape & others → native AG Grid
@@ -2059,11 +2097,24 @@ export default {
     // AG Grid suppressKeyboardEvent handler for cross-cell arrow navigation between
     // editable cells. Used by defaultColDef (when arrowKeyNavigation is on) and reused
     // by the search column for Left/Right caret-edge navigation.
-    arrowKeyNavSuppress(params) {
+    arrowKeyNavSuppress(params, options) {
       if (!params.editing) return false;
 
       const event = params.event;
       const key = event.key;
+
+      // Single exit point for leaving the cell. Runs only when we truly navigate
+      // (caret at edge / non-text input), never on mid-text caret moves. Lets the
+      // search column inject a commit (onBeforeNavigate) and a defer (navigateDelay)
+      // so the async commit lands while the editor is still mounted.
+      const navigate = (target) => {
+        if (options?.onBeforeNavigate) options.onBeforeNavigate();
+        if (options?.navigateDelay) {
+          setTimeout(() => this.navigateToEditableCell(target), options.navigateDelay);
+        } else {
+          this.navigateToEditableCell(target);
+        }
+      };
 
       if (key === 'ArrowUp' || key === 'ArrowDown') {
         event.preventDefault();
@@ -2071,7 +2122,7 @@ export default {
         const direction = key === 'ArrowUp' ? 'up' : 'down';
         const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
         if (target) {
-          this.navigateToEditableCell(target);
+          navigate(target);
         }
         return true;
       }
@@ -2093,7 +2144,7 @@ export default {
           const colId = params.column.getColId();
           const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
           if (target) {
-            this.navigateToEditableCell(target);
+            navigate(target);
           }
           return true;
         }
@@ -2109,7 +2160,7 @@ export default {
           const colId = params.column.getColId();
           const target = this.findNextEditableCell(params.node.rowIndex, colId, direction);
           if (target) {
-            this.navigateToEditableCell(target);
+            navigate(target);
           }
           return true;
         }
