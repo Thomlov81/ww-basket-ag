@@ -192,6 +192,16 @@ export default {
             return {};
         },
     },
+    async beforeMount() {
+        const getIcon = this.params?.getIcon;
+        const iconType = this.params?.calcIconType;
+        if (getIcon && iconType) {
+            const resolved = await getIcon(iconType);
+            if (resolved) {
+                this.calcIcon = resolved;
+            }
+        }
+    },
     mounted() {
         this.$nextTick(() => {
             this.$refs.input?.focus();

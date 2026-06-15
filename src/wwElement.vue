@@ -1731,6 +1731,8 @@ export default {
                 result.cellEditor = "CalculatorCellEditor";
                 result.cellEditorParams = {
                   calcHeaderText: this.content?.calcHeaderText,
+                  calcIconType: this.content?.calcIconType,
+                  getIcon: this.getIcon,
                   calcPopupBackgroundColor: this.content?.calcPopupBackgroundColor,
                   calcPopupBorderColor: this.content?.calcPopupBorderColor,
                   calcPopupBorderRadius: this.content?.calcPopupBorderRadius,

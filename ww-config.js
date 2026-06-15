@@ -234,7 +234,7 @@ export default {
       {
         label: "Calculator",
         isCollapsible: true,
-        properties: ["calcHeaderText"],
+        properties: ["calcHeaderText", "calcIconType"],
       },
       "movableColumns",
       "resizableColumns",
@@ -2914,6 +2914,20 @@ export default {
       bindingValidation: {
         type: "string",
         tooltip: "Popup title text",
+      },
+      /* wwEditor:end */
+    },
+    calcIconType: {
+      label: { en: "Calculator Icon" },
+      type: "SystemIcon",
+      bindable: true,
+      responsive: true,
+      states: true,
+      classes: true,
+      defaultValue: null,
+      /* wwEditor:start */
+      propertyHelp: {
+        tooltip: "Icon shown in the calculator popup header. Leave empty for the default.",
       },
       /* wwEditor:end */
     },
