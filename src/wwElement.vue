@@ -3141,8 +3141,11 @@ export default {
   :deep(.ag-row) {
     border-bottom: none !important;
   }
+  // !important needed: WeWeb's CSS renderer wraps component styles in the
+  // `ww-style-component` cascade layer, which loses to AG Grid's unlayered
+  // `.ag-cell { border: ... transparent }` no matter the specificity.
   :deep(.ag-cell) {
-    border-bottom: var(--ww-row-border, var(--ag-row-border));
+    border-bottom: var(--ww-row-border, var(--ag-row-border)) !important;
   }
 
   // Add column divider to pinned-left selection column (header + body)
