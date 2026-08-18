@@ -1999,18 +1999,24 @@ export default {
       };
     },
     theme() {
+      // An empty-string color passed to withParams() emits an empty CSS
+      // variable, which invalidates any border shorthand referencing it
+      // (e.g. --ag-row-border) — pass undefined so theme defaults apply.
+      const cleanColor = (v) =>
+        typeof v === "string" && v.trim() ? v : undefined;
+
       // Build rowBorder param
       let rowBorderParam = undefined;
+      const rowBorderColor = cleanColor(this.content?.rowBorderColor);
       if (this.content?.rowBorderEnabled === false) {
         rowBorderParam = false;
       } else if (
-        this.content?.rowBorderColor ||
+        rowBorderColor ||
         this.content?.rowBorderStyle ||
         this.content?.rowBorderWidth
       ) {
         rowBorderParam = {};
-        if (this.content?.rowBorderColor)
-          rowBorderParam.color = this.content.rowBorderColor;
+        if (rowBorderColor) rowBorderParam.color = rowBorderColor;
         if (this.content?.rowBorderStyle)
           rowBorderParam.style = this.content.rowBorderStyle;
         if (this.content?.rowBorderWidth)
@@ -2019,10 +2025,10 @@ export default {
 
       // Build columnBorder param
       let columnBorderParam = undefined;
+      const columnBorderColor = cleanColor(this.content?.columnBorderColor);
       if (this.content?.columnBorderEnabled) {
         columnBorderParam = {};
-        if (this.content?.columnBorderColor)
-          columnBorderParam.color = this.content.columnBorderColor;
+        if (columnBorderColor) columnBorderParam.color = columnBorderColor;
         if (this.content?.columnBorderStyle)
           columnBorderParam.style = this.content.columnBorderStyle;
         if (this.content?.columnBorderWidth)
@@ -2031,15 +2037,18 @@ export default {
 
       // Build headerColumnBorder param
       let headerColumnBorderParam = undefined;
+      const headerColumnBorderColor = cleanColor(
+        this.content?.headerColumnBorderColor
+      );
       if (this.content?.headerColumnBorderEnabled) {
-        headerColumnBorderParam = this.content?.headerColumnBorderColor
-          ? { color: this.content.headerColumnBorderColor }
+        headerColumnBorderParam = headerColumnBorderColor
+          ? { color: headerColumnBorderColor }
           : true;
       }
 
       return themeQuartz.withParams({
-        headerBackgroundColor: this.content?.headerBackgroundColor,
-        headerTextColor: this.content?.headerTextColor,
+        headerBackgroundColor: cleanColor(this.content?.headerBackgroundColor),
+        headerTextColor: cleanColor(this.content?.headerTextColor),
         headerFontSize: this.content?.headerFontSize,
         headerFontFamily: this.content?.headerFontFamily,
         headerFontWeight: this.content?.headerFontWeight,
@@ -2048,23 +2057,30 @@ export default {
             ? this.content?.headerHeight
             : undefined,
         cellHorizontalPadding: this.content?.cellHorizontalPadding,
-        borderColor: this.content?.borderColor,
-        cellTextColor: this.content?.cellColor,
+        borderColor: cleanColor(this.content?.borderColor),
+        cellTextColor: cleanColor(this.content?.cellColor),
         cellFontFamily: this.content?.cellFontFamily,
         dataFontSize: this.content?.cellFontSize,
-        oddRowBackgroundColor: this.content?.rowAlternateColor,
-        backgroundColor: this.content?.rowBackgroundColor,
-        rowHoverColor: this.content?.rowHoverColor,
-        selectedRowBackgroundColor: this.content?.selectedRowBackgroundColor,
+        oddRowBackgroundColor: cleanColor(this.content?.rowAlternateColor),
+        backgroundColor: cleanColor(this.content?.rowBackgroundColor),
+        rowHoverColor: cleanColor(this.content?.rowHoverColor),
+        selectedRowBackgroundColor: cleanColor(
+          this.content?.selectedRowBackgroundColor
+        ),
         rowVerticalPaddingScale: this.content?.rowVerticalPaddingScale || 1,
-        menuBackgroundColor: this.content?.menuBackgroundColor,
-        menuTextColor: this.content?.menuTextColor,
-        columnHoverColor: this.content?.columnHoverColor,
-        foregroundColor: this.content?.textColor,
-        checkboxCheckedBackgroundColor: this.content?.selectionCheckboxColor,
-        rangeSelectionBorderColor: this.content?.cellSelectionBorderColor,
-        checkboxUncheckedBorderColor:
-          this.content?.checkboxUncheckedBorderColor,
+        menuBackgroundColor: cleanColor(this.content?.menuBackgroundColor),
+        menuTextColor: cleanColor(this.content?.menuTextColor),
+        columnHoverColor: cleanColor(this.content?.columnHoverColor),
+        foregroundColor: cleanColor(this.content?.textColor),
+        checkboxCheckedBackgroundColor: cleanColor(
+          this.content?.selectionCheckboxColor
+        ),
+        rangeSelectionBorderColor: cleanColor(
+          this.content?.cellSelectionBorderColor
+        ),
+        checkboxUncheckedBorderColor: cleanColor(
+          this.content?.checkboxUncheckedBorderColor
+        ),
         focusShadow: this.content?.focusShadow?.length
           ? this.content.focusShadow
           : "none",
