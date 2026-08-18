@@ -1996,6 +1996,12 @@ export default {
         "--ww-column-border": this.content?.columnBorderEnabled
           ? `${this.content?.columnBorderStyle || "solid"} ${(this.content?.columnBorderWidth || 1) + "px"} ${this.content?.columnBorderColor || "transparent"}`
           : null,
+        // Row border applied to cells (see .ag-cell rule) — self-contained so
+        // it doesn't depend on AG Grid's internal --ag-row-border resolving
+        "--ww-row-border":
+          this.content?.rowBorderEnabled === false
+            ? "none"
+            : `${this.content?.rowBorderStyle || "solid"} ${(this.content?.rowBorderWidth || 1) + "px"} ${this.content?.rowBorderColor || this.content?.borderColor || "#e2e2e2"}`,
       };
     },
     theme() {
@@ -2034,6 +2040,19 @@ export default {
         if (this.content?.columnBorderWidth)
           columnBorderParam.width = this.content.columnBorderWidth;
       }
+
+      /* wwEditor:start */
+      // Temporary diagnostics for missing horizontal row dividers —
+      // remove once confirmed fixed. Editor-only, stripped in production.
+      console.log("[ag-grid-table] row border diagnostics", {
+        rowBorderEnabled: this.content?.rowBorderEnabled,
+        rowBorderColor: this.content?.rowBorderColor,
+        rowBorderStyle: this.content?.rowBorderStyle,
+        rowBorderWidth: this.content?.rowBorderWidth,
+        borderColor: this.content?.borderColor,
+        rowBorderParam,
+      });
+      /* wwEditor:end */
 
       // Build headerColumnBorder param
       let headerColumnBorderParam = undefined;
@@ -3123,7 +3142,7 @@ export default {
     border-bottom: none !important;
   }
   :deep(.ag-cell) {
-    border-bottom: var(--ag-row-border);
+    border-bottom: var(--ww-row-border, var(--ag-row-border));
   }
 
   // Add column divider to pinned-left selection column (header + body)
